@@ -1,10 +1,11 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { app, httpServer } from '../server/index';
 import { registerRoutes } from '../server/routes';
 
 // Cache the route registration so it doesn't happen on every request
 let routesRegistered = false;
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!routesRegistered) {
         await registerRoutes(httpServer, app);
         routesRegistered = true;

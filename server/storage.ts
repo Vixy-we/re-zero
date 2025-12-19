@@ -24,22 +24,28 @@ export class DatabaseStorage implements IStorage {
 
   async createAnime(insertAnime: InsertAnime): Promise<Anime> {
     if (!db) throw new Error("Database not initialized");
-    // Ensure tags is treated correctly by Drizzle
+    // Explicitly cast tags to string[] and ensure it's not null for Drizzle
+    const tags = Array.isArray(insertAnime.tags) ? insertAnime.tags : [];
     const [item] = await db.insert(anime).values({
       ...insertAnime,
-      tags: insertAnime.tags || [],
-    }).returning();
-    return item;
+      tags,
+    } as any).returning();
+    return item as Anime;
   }
 
   async updateAnime(id: number, updates: Partial<InsertAnime>): Promise<Anime | undefined> {
     if (!db) throw new Error("Database not initialized");
+    // Explicitly cast tags for update if it exists
+    const updateData = { ...updates } as any;
+    if (updates.tags) {
+      updateData.tags = Array.isArray(updates.tags) ? updates.tags : [];
+    }
     const [item] = await db
       .update(anime)
-      .set(updates)
+      .set(updateData)
       .where(eq(anime.id, id))
       .returning();
-    return item;
+    return item as Anime;
   }
 
   async deleteAnime(id: number): Promise<void> {
@@ -80,7 +86,7 @@ export class MemStorage implements IStorage {
       episodes: insertAnime.episodes ?? null,
       duration: insertAnime.duration ?? null,
       createdAt: new Date(),
-    };
+    } as Anime;
     this.anime.set(id, anime);
     return anime;
   }
