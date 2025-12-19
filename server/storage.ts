@@ -1,4 +1,4 @@
-import { anime, type InsertAnime, type Anime } from "@shared/schema";
+import { anime, type InsertAnime, type Anime } from "../shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
@@ -24,7 +24,11 @@ export class DatabaseStorage implements IStorage {
 
   async createAnime(insertAnime: InsertAnime): Promise<Anime> {
     if (!db) throw new Error("Database not initialized");
-    const [item] = await db.insert(anime).values(insertAnime).returning();
+    // Ensure tags is treated correctly by Drizzle
+    const [item] = await db.insert(anime).values({
+      ...insertAnime,
+      tags: insertAnime.tags || [],
+    }).returning();
     return item;
   }
 
