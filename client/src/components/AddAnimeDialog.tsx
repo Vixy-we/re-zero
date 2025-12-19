@@ -8,18 +8,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+import { useDebounce } from "@/hooks/use-debounce";
+
 export function AddAnimeDialog() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"search" | "form">("search");
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 500);
   const [selectedJikan, setSelectedJikan] = useState<JikanAnime | null>(null);
 
   // Form State
   const [category, setCategory] = useState("plan_to_watch");
   const [rating, setRating] = useState("");
   const [notes, setNotes] = useState("");
-  
-  const { data: results, isLoading } = useJikanSearch(query);
+
+  const { data: results, isLoading } = useJikanSearch(debouncedQuery);
   const createMutation = useCreateAnime();
 
   const handleSelect = (anime: JikanAnime) => {
@@ -39,8 +42,11 @@ export function AddAnimeDialog() {
       category: category as "watched" | "plan_to_watch",
       rating: rating ? parseInt(rating) : null,
       notes: notes || null,
+      type: selectedJikan.type,
+      episodes: selectedJikan.episodes,
+      duration: selectedJikan.duration,
     });
-    
+
     setOpen(false);
     resetForm();
   };
@@ -55,13 +61,13 @@ export function AddAnimeDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) resetForm(); }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         <Button size="lg" className="rounded-full shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-purple-500 hover:scale-105 transition-transform">
           <Plus className="mr-2 h-5 w-5" /> Add Anime
         </Button>
       </DialogTrigger>
-      
+
       <DialogContent className="sm:max-w-2xl bg-card/95 backdrop-blur-xl border-white/10 text-card-foreground">
         {step === "search" ? (
           <div className="space-y-6">
@@ -86,7 +92,7 @@ export function AddAnimeDialog() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               )}
-              
+
               {!isLoading && query.length >= 3 && results?.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
                   No results found.

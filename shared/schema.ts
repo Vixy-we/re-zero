@@ -12,12 +12,15 @@ export const anime = pgTable("anime", {
   category: text("category").notNull(), // 'watched' | 'plan_to_watch'
   rating: integer("rating"),
   notes: text("notes"),
+  type: text("type"),
+  episodes: integer("episodes"),
+  duration: text("duration"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertAnimeSchema = createInsertSchema(anime).omit({ 
-  id: true, 
-  createdAt: true 
+export const insertAnimeSchema = createInsertSchema(anime).omit({
+  id: true,
+  createdAt: true
 });
 
 export type Anime = typeof anime.$inferSelect;

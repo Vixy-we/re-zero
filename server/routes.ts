@@ -31,6 +31,7 @@ export async function registerRoutes(
   app.post(api.anime.create.path, async (req, res) => {
     try {
       const input = api.anime.create.input.parse(req.body);
+      console.log("Creating anime with:", JSON.stringify(input, null, 2));
       const anime = await storage.createAnime(input);
       res.status(201).json(anime);
     } catch (err) {

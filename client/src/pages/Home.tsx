@@ -14,13 +14,20 @@ export default function Home() {
   const { data: animeList, isLoading } = useAnimeList();
   const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("watched");
   const [sortBy, setSortBy] = useState<"title" | "rating" | "newest">("newest");
   const [filterTag, setFilterTag] = useState<string | null>(null);
+
+  const tabs = [
+    { id: "watched", label: "Watched" },
+    { id: "plan_to_watch", label: "Plan to Watch" },
+    { id: "global", label: "Global DB" },
+  ];
 
   // Filter and Sort Logic
   const getFilteredList = (category: string) => {
     if (!animeList) return [];
-    
+
     let filtered = animeList.filter(a => a.category === category);
 
     if (search) {
@@ -52,12 +59,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
-      
+
       {/* Hero Header */}
       <div className="relative h-[200px] md:h-[280px] bg-gradient-to-r from-background via-purple-900/10 to-background border-b border-white/5 overflow-hidden">
         {/* Abstract Background pattern */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary via-background to-background" />
-        
+
         <div className="container mx-auto px-6 h-full flex flex-col justify-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -75,79 +82,87 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-4 md:px-6 -mt-8 relative z-20">
-        
-        {/* Controls Bar */}
-        <div className="glass-panel rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-4 justify-between items-center">
-          <Tabs defaultValue="watched" className="w-full md:w-auto">
-            <TabsList className="bg-secondary/50 p-1 border border-white/5">
-              <TabsTrigger value="watched" className="px-6 data-[state=active]:bg-primary data-[state=active]:text-white">Watched</TabsTrigger>
-              <TabsTrigger value="plan_to_watch" className="px-6 data-[state=active]:bg-primary data-[state=active]:text-white">Plan to Watch</TabsTrigger>
-              <TabsTrigger value="global" className="px-6 data-[state=active]:bg-primary data-[state=active]:text-white">Global DB</TabsTrigger>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Controls Bar */}
+          <div className="glass-panel rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <TabsList className="bg-secondary/50 p-1 border border-white/5 relative rounded-full">
+              {tabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="relative px-6 z-10 data-[state=active]:bg-transparent data-[state=active]:text-white transition-colors hover:text-white/80 rounded-full"
+                >
+                  {activeTab === tab.id && (
+                    <motion.div
+                      layoutId="active-tab"
+                      className="absolute inset-0 bg-primary rounded-full -z-10"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  {tab.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
-          </Tabs>
 
-          <div className="flex gap-3 w-full md:w-auto">
-            <Input 
-              placeholder="Filter titles..." 
-              className="bg-secondary/50 border-white/10 md:w-[200px]"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-              <SelectTrigger className="w-[140px] bg-secondary/50 border-white/10">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest Added</SelectItem>
-                <SelectItem value="title">Title (A-Z)</SelectItem>
-                <SelectItem value="rating">Rating (High-Low)</SelectItem>
-              </SelectContent>
-            </Select>
-            <AddAnimeDialog />
+            <div className="flex gap-3 w-full md:w-auto">
+              <Input
+                placeholder="Filter titles..."
+                className="bg-secondary/50 border-white/10 md:w-[200px] rounded-full px-4"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                <SelectTrigger className="w-[140px] bg-secondary/50 border-white/10 rounded-full px-4">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest Added</SelectItem>
+                  <SelectItem value="title">Title (A-Z)</SelectItem>
+                  <SelectItem value="rating">Rating (High-Low)</SelectItem>
+                </SelectContent>
+              </Select>
+              <AddAnimeDialog />
+            </div>
           </div>
-        </div>
 
-        {/* Tags Bar */}
-        {allTags.length > 0 && (
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
-            <button 
-              onClick={() => setFilterTag(null)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
-                filterTag === null ? "bg-primary text-white border-primary" : "bg-transparent border-white/10 hover:border-white/30 text-muted-foreground"
-              }`}
-            >
-              All
-            </button>
-            {allTags.map(tag => (
+          {/* Tags Bar */}
+          {allTags.length > 0 && (
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
               <button
-                key={tag}
-                onClick={() => setFilterTag(tag === filterTag ? null : tag)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
-                  filterTag === tag ? "bg-primary text-white border-primary" : "bg-transparent border-white/10 hover:border-white/30 text-muted-foreground"
-                }`}
+                onClick={() => setFilterTag(null)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${filterTag === null ? "bg-primary text-white border-primary" : "bg-transparent border-white/10 hover:border-white/30 text-muted-foreground"
+                  }`}
               >
-                {tag}
+                All
               </button>
-            ))}
-          </div>
-        )}
+              {allTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setFilterTag(tag === filterTag ? null : tag)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${filterTag === tag ? "bg-primary text-white border-primary" : "bg-transparent border-white/10 hover:border-white/30 text-muted-foreground"
+                    }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
 
-        {/* Grid Content */}
-        <Tabs defaultValue="watched" className="w-full">
-          
+          {/* Grid Content */}
           <TabsContent value="watched" className="mt-0">
-            <AnimeGrid 
-              items={getFilteredList('watched')} 
-              onSelect={setSelectedAnime} 
+            <AnimeGrid
+              items={getFilteredList('watched')}
+              onSelect={setSelectedAnime}
               emptyMessage="You haven't finished any anime yet."
             />
           </TabsContent>
-          
+
           <TabsContent value="plan_to_watch" className="mt-0">
-            <AnimeGrid 
-              items={getFilteredList('plan_to_watch')} 
+            <AnimeGrid
+              items={getFilteredList('plan_to_watch')}
               onSelect={setSelectedAnime}
-              emptyMessage="Your plan to watch list is empty." 
+              emptyMessage="Your plan to watch list is empty."
             />
           </TabsContent>
 
@@ -156,7 +171,7 @@ export default function Home() {
               <Database className="w-16 h-16 text-muted-foreground mb-4 opacity-50" />
               <h3 className="font-display text-2xl font-bold mb-2">Global Database</h3>
               <p className="text-muted-foreground max-w-md">
-                We're building a massive database of all anime ever created. 
+                We're building a massive database of all anime ever created.
                 Coming soon to your shelf!
               </p>
             </div>
@@ -165,9 +180,9 @@ export default function Home() {
 
       </div>
 
-      <AnimeDetailsDialog 
-        anime={selectedAnime} 
-        onClose={() => setSelectedAnime(null)} 
+      <AnimeDetailsDialog
+        anime={selectedAnime}
+        onClose={() => setSelectedAnime(null)}
       />
     </div>
   );

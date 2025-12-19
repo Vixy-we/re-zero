@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertAnime } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
+import type { InsertAnime } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 export type JikanAnime = {
@@ -8,6 +9,11 @@ export type JikanAnime = {
   images: { jpg: { large_image_url: string; image_url: string } };
   synopsis: string;
   genres: Array<{ name: string }>;
+  year: number;
+  score: number;
+  type: string;
+  episodes: number;
+  duration: string;
 };
 
 // ============================================
@@ -39,27 +45,19 @@ export function useAnime(id: number) {
   });
 }
 
+import { apiRequest } from "@/lib/queryClient";
+
 export function useCreateAnime() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (data: InsertAnime) => {
-      const validated = api.anime.create.input.parse(data);
-      const res = await fetch(api.anime.create.path, {
-        method: api.anime.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = api.anime.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
-        }
-        throw new Error("Failed to add anime");
-      }
+      const res = await apiRequest(
+        api.anime.create.method,
+        api.anime.create.path,
+        data
+      );
       return api.anime.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -78,17 +76,12 @@ export function useUpdateAnime() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: number } & Partial<InsertAnime>) => {
-      const validated = api.anime.update.input.parse(updates);
       const url = buildUrl(api.anime.update.path, { id });
-      
-      const res = await fetch(url, {
-        method: api.anime.update.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error("Failed to update anime");
+      const res = await apiRequest(
+        api.anime.update.method,
+        url,
+        updates
+      );
       return api.anime.update.responses[200].parse(await res.json());
     },
     onSuccess: () => {
@@ -108,8 +101,7 @@ export function useDeleteAnime() {
   return useMutation({
     mutationFn: async (id: number) => {
       const url = buildUrl(api.anime.delete.path, { id });
-      const res = await fetch(url, { method: api.anime.delete.method, credentials: "include" });
-      if (!res.ok) throw new Error("Failed to delete anime");
+      await apiRequest(api.anime.delete.method, url);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.anime.list.path] });
