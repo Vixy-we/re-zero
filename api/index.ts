@@ -13,8 +13,9 @@ export default async function handler(req, res) {
     // Vercel rewrite might strip the presence of /api prefix from req.url
     // but our Express app routes are defined with /api prefix.
     // We re-add it if missing to ensure routing works.
-    if (req.url && !req.url.startsWith('/api')) {
-        req.url = '/api' + req.url;
+    const url = req.url || '';
+    if (!url.startsWith('/api') && !url.includes('_next')) {
+        req.url = '/api' + url;
     }
 
     // Forward request to Express app
