@@ -63,12 +63,12 @@ export function AddAnimeDialog() {
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
-        <Button size="lg" className="rounded-full shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-purple-500 hover:scale-105 transition-transform">
+        <Button size="lg" className="w-full sm:w-auto rounded-full shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-purple-500 hover:scale-105 transition-transform">
           <Plus className="mr-2 h-5 w-5" /> Add Anime
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-2xl bg-card/95 backdrop-blur-xl border-white/10 text-card-foreground">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-card/95 backdrop-blur-xl border-white/10 text-card-foreground">
         {step === "search" ? (
           <div className="space-y-6">
             <div className="text-center space-y-2">

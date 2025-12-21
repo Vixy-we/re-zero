@@ -75,25 +75,25 @@ export function AnimeCard({ anime, onClick }: AnimeCardProps) {
         </div>
 
         {/* Bottom Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-6 group-hover:translate-y-0 transition-transform duration-300">
-          <h3 className="font-display font-bold text-lg leading-tight text-white mb-1 line-clamp-2 text-shadow">
+        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 transform translate-y-6 group-hover:translate-y-0 transition-transform duration-300">
+          <h3 className="font-display font-bold text-sm sm:text-lg leading-tight text-white mb-1 line-clamp-2 text-shadow">
             {anime.title}
           </h3>
 
-          <div className="flex items-end justify-between text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+          <div className="flex items-end justify-between text-xs sm:text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
             {/* Left: User Rating & Genre */}
             <div className="flex flex-col gap-1">
               <div className="flex items-center text-accent">
-                <Star className="w-3.5 h-3.5 fill-current mr-1" />
+                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current mr-1" />
                 <span className="font-mono font-bold leading-none">{anime.rating || "N/A"}</span>
               </div>
-              <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+              <span className="text-[10px] text-muted-foreground truncate max-w-[60px] sm:max-w-[80px]">
                 {anime.tags && anime.tags.length > 0 ? anime.tags[0] : ""}
               </span>
             </div>
 
             {/* Right: Type Info */}
-            <span className="text-xs text-muted-foreground truncate max-w-[120px] text-right mb-0.5">
+            <span className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[120px] text-right mb-0.5">
               {formatAnimeType(anime)}
             </span>
           </div>

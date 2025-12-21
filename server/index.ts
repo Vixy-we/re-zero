@@ -86,6 +86,7 @@ if (process.env.NODE_ENV !== "production") {
       },
       () => {
         log(`serving on port ${port}`);
+        log(`App running at: http://localhost:${port}`);
       },
     );
   })();

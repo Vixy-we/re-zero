@@ -71,7 +71,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="font-display text-4xl md:text-6xl font-bold mb-2 tracking-tight">
+            <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-bold mb-2 tracking-tight">
               My <span className="text-primary">Anime</span> Shelf
             </h1>
             <p className="text-muted-foreground text-lg max-w-lg">
@@ -85,35 +85,38 @@ export default function Home() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Controls Bar */}
-          <div className="glass-panel rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-4 justify-between items-center">
-            <TabsList className="bg-secondary/50 p-1 border border-white/5 relative rounded-full">
-              {tabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="relative px-6 z-10 data-[state=active]:bg-transparent data-[state=active]:text-white transition-colors hover:text-white/80 rounded-full"
-                >
-                  {activeTab === tab.id && (
-                    <motion.div
-                      layoutId="active-tab"
-                      className="absolute inset-0 bg-primary rounded-full -z-10"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          <div className="glass-panel rounded-2xl p-4 mb-8 flex flex-col lg:flex-row gap-6 justify-between items-center">
+            {/* Scrollable Tabs Container */}
+            <div className="w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
+              <TabsList className="bg-secondary/50 p-1 border border-white/5 relative rounded-full inline-flex min-w-full lg:min-w-fit justify-start lg:justify-center">
+                {tabs.map((tab) => (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className="relative px-4 sm:px-6 py-2 z-10 data-[state=active]:bg-transparent data-[state=active]:text-white transition-colors hover:text-white/80 rounded-full flex-1 lg:flex-none text-sm sm:text-base"
+                  >
+                    {activeTab === tab.id && (
+                      <motion.div
+                        layoutId="active-tab"
+                        className="absolute inset-0 bg-primary rounded-full -z-10"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
-            <div className="flex gap-3 w-full md:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto items-stretch">
               <Input
                 placeholder="Filter titles..."
-                className="bg-secondary/50 border-white/10 md:w-[200px] rounded-full px-4"
+                className="bg-secondary/50 border-white/10 w-full md:w-[200px] rounded-full px-4"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
               <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-                <SelectTrigger className="w-[140px] bg-secondary/50 border-white/10 rounded-full px-4">
+                <SelectTrigger className="w-full sm:w-[140px] bg-secondary/50 border-white/10 rounded-full px-4">
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,7 +125,9 @@ export default function Home() {
                   <SelectItem value="rating">Rating (High-Low)</SelectItem>
                 </SelectContent>
               </Select>
-              <AddAnimeDialog />
+              <div className="w-full sm:w-auto">
+                <AddAnimeDialog />
+              </div>
             </div>
           </div>
 
@@ -199,7 +204,7 @@ function AnimeGrid({ items, onSelect, emptyMessage }: { items: Anime[], onSelect
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6 md:gap-8">
       <AnimatePresence>
         {items.map((anime) => (
           <AnimeCard key={anime.id} anime={anime} onClick={onSelect} />

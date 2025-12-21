@@ -57,13 +57,13 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
   return (
     <Dialog open={!!anime} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden bg-card border-white/10 text-card-foreground gap-0">
-        
+
         {/* Header Image Area */}
-        <div className="relative h-64 w-full">
+        <div className="relative h-48 sm:h-64 w-full">
           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent z-10" />
-          <img 
-            src={anime.imageUrl} 
-            alt={anime.title} 
+          <img
+            src={anime.imageUrl}
+            alt={anime.title}
             className="w-full h-full object-cover opacity-50 blur-sm"
           />
           <div className="absolute top-4 right-4 z-20">
@@ -76,29 +76,29 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
         </div>
 
         {/* Content Area */}
-        <div className="grid md:grid-cols-[300px_1fr] gap-8 p-8 -mt-32 relative z-20">
-          
+        <div className="grid md:grid-cols-[300px_1fr] gap-6 sm:gap-8 p-4 sm:p-8 -mt-32 relative z-20">
+
           {/* Left Column: Poster & Actions */}
           <div className="space-y-6">
-            <div className="aspect-[2/3] rounded-lg overflow-hidden shadow-2xl border-4 border-card bg-card">
-              <img 
-                src={anime.imageUrl} 
-                alt={anime.title} 
+            <div className="aspect-[2/3] rounded-lg overflow-hidden shadow-2xl border-4 border-card bg-card mx-auto sm:mx-0 max-w-[240px] md:max-w-none">
+              <img
+                src={anime.imageUrl}
+                alt={anime.title}
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             <div className="space-y-2">
               {!isEditing ? (
                 <>
-                  <Button 
-                    className="w-full bg-secondary hover:bg-secondary/80 text-white" 
+                  <Button
+                    className="w-full bg-secondary hover:bg-secondary/80 text-white"
                     onClick={() => setIsEditing(true)}
                   >
                     <Edit2 className="w-4 h-4 mr-2" /> Edit Details
                   </Button>
-                  <Button 
-                    variant="destructive" 
+                  <Button
+                    variant="destructive"
                     className="w-full"
                     onClick={handleDelete}
                   >
@@ -107,15 +107,15 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                 </>
               ) : (
                 <>
-                  <Button 
-                    className="w-full bg-primary hover:bg-primary/90" 
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90"
                     onClick={handleSave}
                     disabled={updateMutation.isPending}
                   >
                     <Save className="w-4 h-4 mr-2" /> Save Changes
                   </Button>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     className="w-full"
                     onClick={() => setIsEditing(false)}
                   >
@@ -127,9 +127,9 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
           </div>
 
           {/* Right Column: Details */}
-          <div className="space-y-6 pt-8 md:pt-0">
+          <div className="space-y-6 pt-2 md:pt-0">
             <div>
-              <h2 className="font-display text-4xl font-bold mb-2">{anime.title}</h2>
+              <h2 className="font-display text-2xl sm:text-4xl font-bold mb-2">{anime.title}</h2>
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
@@ -151,11 +151,11 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                 <div className="flex-1">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">Rating</Label>
                   {isEditing ? (
-                    <Input 
-                      type="number" 
-                      min="1" 
-                      max="10" 
-                      value={rating} 
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={rating}
                       onChange={e => setRating(e.target.value)}
                       className="w-24 bg-card border-white/10"
                     />
@@ -181,9 +181,8 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                       </SelectContent>
                     </Select>
                   ) : (
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      anime.category === 'watched' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'
-                    }`}>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${anime.category === 'watched' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'
+                      }`}>
                       {anime.category === 'watched' ? 'Watched' : 'Plan to Watch'}
                     </span>
                   )}
@@ -202,8 +201,8 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
               <div className="space-y-2">
                 <h3 className="font-display text-xl font-bold">Personal Notes</h3>
                 {isEditing ? (
-                  <Textarea 
-                    value={notes} 
+                  <Textarea
+                    value={notes}
                     onChange={e => setNotes(e.target.value)}
                     className="bg-card border-white/10 min-h-[100px]"
                     placeholder="Add your thoughts..."
