@@ -26,10 +26,11 @@ export class DatabaseStorage implements IStorage {
     if (!db) throw new Error("Database not initialized");
     // Explicitly cast tags to string[] and ensure it's not null for Drizzle
     const tags = Array.isArray(insertAnime.tags) ? insertAnime.tags : [];
-    const [item] = await db.insert(anime).values({
+    const values = {
       ...insertAnime,
       tags,
-    } as any).returning();
+    } as any;
+    const [item] = await db.insert(anime).values(values).returning();
     return item as Anime;
   }
 
@@ -81,7 +82,7 @@ export class MemStorage implements IStorage {
       rating: insertAnime.rating ?? null,
       notes: insertAnime.notes ?? null,
       description: insertAnime.description ?? null,
-      tags: (insertAnime.tags as string[]) ?? [],
+      tags: (insertAnime.tags as unknown as string[]) ?? [],
       type: insertAnime.type ?? null,
       episodes: insertAnime.episodes ?? null,
       duration: insertAnime.duration ?? null,
