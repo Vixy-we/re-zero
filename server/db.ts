@@ -1,5 +1,5 @@
-import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from "../shared/schema";
 
 if (!process.env.DATABASE_URL) {
@@ -8,9 +8,6 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Required for Supabase/Neon on Vercel
-});
-
-export const db = drizzle(pool, { schema });
+// Disable prefetch as it is not supported for "Transaction" pool mode
+const client = postgres(process.env.DATABASE_URL!, { prepare: false });
+export const db = drizzle(client, { schema });
