@@ -1,7 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
-import type { InsertAnime } from "@shared/schema";
+import type { InsertAnime, Anime } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+
+// Helper to map DB snake_case to Frontend camelCase
+const mapToAnime = (row: any): Anime => ({
+  ...row,
+  malId: row.mal_id,
+  imageUrl: row.image_url,
+  createdAt: row.created_at ? new Date(row.created_at) : null,
+});
+
+// Helper to map Frontend camelCase to DB snake_case
+const mapToDb = (data: Partial<InsertAnime> & { createdAt?: Date }) => {
+  const { malId, imageUrl, createdAt, ...rest } = data;
+  return {
+    ...rest,
+    ...(malId !== undefined && { mal_id: malId }),
+    ...(imageUrl !== undefined && { image_url: imageUrl }),
+    // created_at is automatic or managed elsewhere usually
+  };
+};
 
 export type JikanAnime = {
   mal_id: number;
@@ -16,36 +35,37 @@ export type JikanAnime = {
   duration: string;
 };
 
-// ============================================
-// BACKEND API HOOKS
-// ============================================
-
 export function useAnimeList() {
   return useQuery({
-    queryKey: [api.anime.list.path],
+    queryKey: ["anime-list"],
     queryFn: async () => {
-      const res = await fetch(api.anime.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch anime list");
-      return api.anime.list.responses[200].parse(await res.json());
+      const { data, error } = await supabase
+        .from("anime")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(mapToAnime);
     },
   });
 }
 
 export function useAnime(id: number) {
   return useQuery({
-    queryKey: [api.anime.get.path, id],
+    queryKey: ["anime", id],
     queryFn: async () => {
-      const url = buildUrl(api.anime.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
-      if (res.status === 404) return null;
-      if (!res.ok) throw new Error("Failed to fetch anime details");
-      return api.anime.get.responses[200].parse(await res.json());
+      const { data, error } = await supabase
+        .from("anime")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+      return mapToAnime(data);
     },
     enabled: !!id,
   });
 }
-
-import { apiRequest } from "@/lib/queryClient";
 
 export function useCreateAnime() {
   const queryClient = useQueryClient();
@@ -53,15 +73,18 @@ export function useCreateAnime() {
 
   return useMutation({
     mutationFn: async (data: InsertAnime) => {
-      const res = await apiRequest(
-        api.anime.create.method,
-        api.anime.create.path,
-        data
-      );
-      return api.anime.create.responses[201].parse(await res.json());
+      const dbData = mapToDb(data);
+      const { data: created, error } = await supabase
+        .from("anime")
+        .insert(dbData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return mapToAnime(created);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.anime.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["anime-list"] });
       toast({ title: "Added to Library", description: "Anime saved successfully." });
     },
     onError: (err) => {
@@ -76,16 +99,19 @@ export function useUpdateAnime() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: number } & Partial<InsertAnime>) => {
-      const url = buildUrl(api.anime.update.path, { id });
-      const res = await apiRequest(
-        api.anime.update.method,
-        url,
-        updates
-      );
-      return api.anime.update.responses[200].parse(await res.json());
+      const dbData = mapToDb(updates);
+      const { data: updated, error } = await supabase
+        .from("anime")
+        .update(dbData)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return mapToAnime(updated);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.anime.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["anime-list"] });
       toast({ title: "Updated", description: "Changes saved." });
     },
     onError: (err) => {
@@ -100,11 +126,11 @@ export function useDeleteAnime() {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      const url = buildUrl(api.anime.delete.path, { id });
-      await apiRequest(api.anime.delete.method, url);
+      const { error } = await supabase.from("anime").delete().eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.anime.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["anime-list"] });
       toast({ title: "Deleted", description: "Anime removed from library." });
     },
   });
