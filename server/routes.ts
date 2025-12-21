@@ -35,13 +35,15 @@ export async function registerRoutes(
       const anime = await storage.createAnime(input);
       res.status(201).json(anime);
     } catch (err) {
+      console.error("Error creating anime:", err); // Log the full error
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: "Validation failed",
           field: err.errors[0].path.join('.'),
         });
       }
-      throw err;
+      // Return 500 but also log it
+      res.status(500).json({ message: "Internal Server Error", details: (err as Error).message });
     }
   });
 
