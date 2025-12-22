@@ -3,6 +3,7 @@ import { useAnimeList, useJikanSearch, useJikanExplore, type JikanAnime } from "
 import { AddAnimeDialog } from "@/components/AddAnimeDialog";
 import { AnimeCard } from "@/components/AnimeCard";
 import { AnimeDetailsDialog } from "@/components/AnimeDetailsDialog";
+import { Link } from "wouter";
 
 import { GlobalAnimeGrid } from "@/components/GlobalAnimeGrid";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -111,6 +112,14 @@ export default function Home() {
       <div className="relative h-[200px] md:h-[280px] bg-gradient-to-r from-background via-purple-900/10 to-background border-b border-white/5 overflow-hidden">
         {/* Abstract Background pattern */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary via-background to-background" />
+
+        <div className="absolute top-6 right-6 z-50">
+          <Link href="/infinite-shelf">
+            <Button variant="ghost" className="text-white/50 hover:text-white font-mono tracking-widest text-xs uppercase border border-white/10 bg-black/20 backdrop-blur-sm transition-all hover:bg-black/40 hover:border-white/20">
+              Infinite SHELF →
+            </Button>
+          </Link>
+        </div>
 
         <div className="container mx-auto px-6 h-full flex flex-col justify-center relative z-10">
           <motion.div
