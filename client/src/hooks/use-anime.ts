@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import type { InsertAnime, Anime } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -143,17 +143,108 @@ export function useDeleteAnime() {
 // EXTERNAL API HOOKS (Jikan)
 // ============================================
 
-export function useJikanSearch(query: string) {
+export function useJikanSearch(query: string, type?: string | null) {
   return useQuery({
-    queryKey: ["jikan", query],
+    queryKey: ["jikan", query, type],
     queryFn: async () => {
       if (!query || query.length < 3) return [];
-      const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=8`);
+      let url = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=12`;
+      if (type && type !== "all") {
+        url += `&type=${type}`;
+      }
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to search Jikan");
       const data = await res.json();
       return data.data as JikanAnime[];
     },
     enabled: query.length >= 3,
     staleTime: 1000 * 60 * 60, // 1 hour
+  });
+}
+
+const GENRE_MAP: Record<string, number> = {
+  "action": 1, "adventure": 2, "cars": 3, "comedy": 4, "avante garde": 5,
+  "demons": 6, "mystery": 7, "drama": 8, "ecchi": 9, "fantasy": 10, "game": 11,
+  "hentai": 12, "historical": 13, "horror": 14, "kids": 15, "martial arts": 17,
+  "mecha": 18, "music": 19, "parody": 20, "samurai": 21, "romance": 22,
+  "school": 23, "sci-fi": 24, "shoujo": 25, "shounen": 27, "space": 29,
+  "sports": 30, "super power": 31, "vampire": 32, "slice of life": 36,
+  "supernatural": 37, "military": 38, "police": 39, "psychological": 40,
+  "thriller": 41, "seinen": 42, "josei": 43
+};
+
+export function useJikanExplore(type?: string | null, filter?: string | null, includeTags?: string, excludeTags?: string) {
+  return useInfiniteQuery({
+    queryKey: ["jikan-explore", type, filter, includeTags, excludeTags],
+    queryFn: async ({ pageParam = 1 }) => {
+      let url = `https://api.jikan.moe/v4/anime?page=${pageParam}&limit=24`;
+
+      // Defaults
+      let orderBy = "members"; // popularity
+      let sort = "desc";
+      let status = "";
+
+      // 1. Map simple filters to API params
+      if (filter === "top_rated") {
+        orderBy = "score";
+        // status = "complete"; 
+      } else if (filter === "airing") {
+        status = "airing";
+        orderBy = "members"; // Popular airing
+      } else if (filter === "upcoming") {
+        status = "upcoming";
+        orderBy = "members";
+      } else if (filter === "just_released") {
+        status = "airing";
+        orderBy = "start_date";
+      } else {
+        // "bypopularity" or default
+        orderBy = "members";
+      }
+
+      url += `&order_by=${orderBy}&sort=${sort}`;
+      if (status) url += `&status=${status}`;
+
+      // 2. Type Filter
+      if (type && type !== "all") {
+        url += `&type=${type}`;
+      }
+
+      // 3. Tag Filters (Name -> ID)
+      const parseTags = (input: string) => input.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+
+      if (includeTags) {
+        const ids = parseTags(includeTags).map(t => GENRE_MAP[t]).filter(Boolean);
+        if (ids.length > 0) url += `&genres=${ids.join(',')}`;
+      }
+
+      if (excludeTags) {
+        const ids = parseTags(excludeTags).map(t => GENRE_MAP[t]).filter(Boolean);
+        if (ids.length > 0) url += `&genres_exclude=${ids.join(',')}`;
+      }
+
+      // Delay to avoid hitting rate limit too fast if scrolling aggressively
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch explore data");
+      const data = await res.json();
+
+      let items = data.data as JikanAnime[];
+
+      // Client-side filter for "just_released" future dates
+      if (filter === "just_released") {
+        const now = new Date();
+        items = items.filter(a => a.aired?.from && new Date(a.aired.from) <= now);
+      }
+
+      return {
+        data: items,
+        nextPage: data.pagination?.has_next_page ? pageParam + 1 : undefined,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 1,
+    staleTime: 1000 * 60 * 60,
   });
 }

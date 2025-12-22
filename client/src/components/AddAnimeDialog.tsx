@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDebounce } from "@/hooks/use-debounce";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function AddAnimeDialog() {
-  const [open, setOpen] = useState(false);
+interface AddAnimeDialogProps {
+  initialAnime?: JikanAnime | null;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
+}
+
+export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: AddAnimeDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Determine if controlled or uncontrolled
+  const isControlled = isOpen !== undefined;
+  const show = isControlled ? isOpen : internalOpen;
+  const setShow = (val: boolean) => {
+    if (isControlled && onOpenChange) {
+      onOpenChange(val);
+    } else {
+      setInternalOpen(val);
+    }
+  };
+
   const [step, setStep] = useState<"search" | "form">("search");
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 500);
@@ -26,6 +45,26 @@ export function AddAnimeDialog() {
 
   const { data: results, isLoading } = useJikanSearch(debouncedQuery);
   const createMutation = useCreateAnime();
+
+  useEffect(() => {
+    if (show && initialAnime) {
+      setSelectedJikan(initialAnime);
+      setTags(initialAnime.genres.map(g => g.name));
+      setStep("form");
+    }
+  }, [show, initialAnime]);
+
+  // Reset when closed
+  useEffect(() => {
+    if (!show) {
+      const t = setTimeout(() => {
+        setStep("search");
+        setQuery("");
+        if (!initialAnime) setSelectedJikan(null); // customized to not clear if controlled with same prop?
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [show]);
 
   const handleSelect = (anime: JikanAnime) => {
     setSelectedJikan(anime);
@@ -51,7 +90,7 @@ export function AddAnimeDialog() {
       releaseYear: selectedJikan.year || (selectedJikan.aired?.from ? new Date(selectedJikan.aired.from).getFullYear() : null),
     });
 
-    setOpen(false);
+    setShow(false);
     resetForm();
   };
 
@@ -69,11 +108,13 @@ export function AddAnimeDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+    <Dialog open={show} onOpenChange={(v) => { setShow(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
-        <Button size="lg" className="w-full sm:w-auto rounded-full shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-purple-500 hover:scale-105 transition-transform font-bold tracking-wide">
-          <Plus className="mr-2 h-5 w-5" /> ADD ANIME
-        </Button>
+        {trigger || (
+          <Button size="lg" className="w-full sm:w-auto rounded-full shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-purple-500 hover:scale-105 transition-transform font-bold tracking-wide">
+            <Plus className="mr-2 h-5 w-5" /> ADD ANIME
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden p-0 gap-0 bg-zinc-950/95 backdrop-blur-xl border-white/10 text-white">
@@ -185,7 +226,7 @@ export function AddAnimeDialog() {
                   {selectedJikan?.synopsis && (
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-wider text-muted-foreground">Synopsis</Label>
-                      <p className="text-sm text-gray-300 leading-relaxed max-h-[200px] overflow-y-auto pr-2 custom-scrollbar bg-white/5 p-3 rounded-lg border border-white/5">
+                      <p className="text-xs text-gray-300 leading-relaxed bg-white/5 p-3 rounded-lg border border-white/5">
                         {selectedJikan.synopsis}
                       </p>
                     </div>
@@ -261,7 +302,7 @@ export function AddAnimeDialog() {
                       <Label className="text-xs uppercase tracking-wider text-muted-foreground">Personal Notes</Label>
                       <Textarea
                         placeholder="What did you think about this show? (Optional)"
-                        className="bg-white/5 border-white/10 min-h-[80px] resize-none focus:ring-primary/50"
+                        className="bg-white/5 border-white/10 min-h-[50px] h-[50px] resize-none focus:ring-primary/50 text-xs py-2"
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                       />

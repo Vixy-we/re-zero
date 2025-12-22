@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { useAnimeList } from "@/hooks/use-anime";
+import { useAnimeList, useJikanSearch, useJikanExplore, type JikanAnime } from "@/hooks/use-anime";
 import { AddAnimeDialog } from "@/components/AddAnimeDialog";
 import { AnimeCard } from "@/components/AnimeCard";
 import { AnimeDetailsDialog } from "@/components/AnimeDetailsDialog";
+
+import { GlobalAnimeGrid } from "@/components/GlobalAnimeGrid";
+import { useDebounce } from "@/hooks/use-debounce";
 import type { Anime } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Loader2, LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,9 +29,37 @@ export default function Home() {
   const [tempExcludeInput, setTempExcludeInput] = useState("");
   const [isExcludeOpen, setIsExcludeOpen] = useState(false);
 
+  // Global DB & Explore States
+  const [globalType, setGlobalType] = useState<string | null>("all");
+  const [globalQuery, setGlobalQuery] = useState("");
+  const globalDebouncedQuery = useDebounce(globalQuery, 500);
+  const { data: globalAnime, isLoading: isGlobalLoading } = useJikanSearch(globalDebouncedQuery, globalType);
+
+  const [exploreType, setExploreType] = useState<string | null>("all");
+  const [exploreFilter, setExploreFilter] = useState<string | null>("bypopularity");
+
+  const [exploreInclude, setExploreInclude] = useState("");
+  const [exploreExclude, setExploreExclude] = useState("");
+  const debouncedInclude = useDebounce(exploreInclude, 600);
+  const debouncedExclude = useDebounce(exploreExclude, 600);
+
+  const {
+    data: exploreData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isExploreLoading
+  } = useJikanExplore(exploreType, exploreFilter, debouncedInclude, debouncedExclude);
+
+  const exploreAnime = exploreData?.pages.flatMap(page => page.data) || [];
+
+  const [selectedJikanAnime, setSelectedJikanAnime] = useState<JikanAnime | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
   const tabs = [
     { id: "watched", label: "Watched" },
     { id: "plan_to_watch", label: "Plan to Watch" },
+    { id: "explore", label: "Explore" },
     { id: "global", label: "Global DB" },
   ];
 
@@ -155,7 +186,14 @@ export default function Home() {
                 </SelectContent>
               </Select>
               <div className="w-full sm:w-auto">
-                <AddAnimeDialog />
+                <AddAnimeDialog
+                  isOpen={isAddDialogOpen}
+                  onOpenChange={(v) => {
+                    setIsAddDialogOpen(v);
+                    if (!v) setSelectedJikanAnime(null);
+                  }}
+                  initialAnime={selectedJikanAnime}
+                />
               </div>
             </div>
           </div>
@@ -208,15 +246,145 @@ export default function Home() {
             />
           </TabsContent>
 
-          <TabsContent value="global" className="mt-0">
-            <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-white/10 rounded-3xl bg-white/5">
-              <Database className="w-16 h-16 text-muted-foreground mb-4 opacity-50" />
-              <h3 className="font-display text-2xl font-bold mb-2">Global Database</h3>
-              <p className="text-muted-foreground max-w-md">
-                We're building a massive database of all anime ever created.
-                Coming soon to your shelf!
-              </p>
+          <TabsContent value="explore" className="mt-0 space-y-6">
+            <div className="flex flex-col items-center gap-4 mb-8">
+              <Tabs value={exploreFilter || "bypopularity"} onValueChange={(v) => setExploreFilter(v)} className="w-auto">
+                <TabsList className="bg-white/5 p-1 border border-white/10 rounded-full h-auto flex flex-wrap justify-center gap-1 mb-2">
+                  {[
+                    { id: "bypopularity", label: "Most Popular" },
+                    { id: "top_rated", label: "Top Rated" },
+                    { id: "airing", label: "Airing Now" },
+                    { id: "just_released", label: "Just Released" },
+                    { id: "upcoming", label: "Upcoming" }
+                  ].map(option => (
+                    <TabsTrigger
+                      key={option.id}
+                      value={option.id}
+                      className="relative px-4 py-1.5 rounded-full text-xs font-bold transition-colors data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=inactive]:text-muted-foreground hover:text-white z-10"
+                    >
+                      {exploreFilter === option.id && (
+                        <motion.div
+                          layoutId="active-explore-filter"
+                          className="absolute inset-0 bg-primary rounded-full -z-10 shadow-md shadow-primary/20"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      {option.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                {["all", "tv", "movie", "ova", "special", "ona", "music"].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setExploreType(type)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all uppercase tracking-wide ${exploreType === type
+                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/25 scale-105"
+                      : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10 hover:text-white"
+                      }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+
+              <div className="w-full max-w-2xl px-4 grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 animate-in fade-in slide-in-from-top-1">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Include Tags</label>
+                  </div>
+                  <Input
+                    placeholder="e.g. Action, Fantasy"
+                    value={exploreInclude}
+                    onChange={e => setExploreInclude(e.target.value)}
+                    className="bg-white/5 border-white/10 rounded-xl h-9 text-xs focus:ring-1 focus:ring-green-500/50 transition-all font-medium"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Exclude Tags</label>
+                  </div>
+                  <Input
+                    placeholder="e.g. Mecha, Horror"
+                    value={exploreExclude}
+                    onChange={e => setExploreExclude(e.target.value)}
+                    className="bg-white/5 border-white/10 rounded-xl h-9 text-xs focus:ring-1 focus:ring-red-500/50 transition-all font-medium"
+                  />
+                </div>
+              </div>
             </div>
+
+            <GlobalAnimeGrid
+              key={`${exploreFilter}-${debouncedInclude}-${debouncedExclude}`}
+              items={exploreAnime}
+              isLoading={isExploreLoading}
+              onSelect={(anime) => {
+                setSelectedJikanAnime(anime);
+                setIsAddDialogOpen(true);
+              }}
+            />
+
+            {hasNextPage && (
+              <div className="flex justify-center pt-8 pb-12">
+                <Button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  variant="outline"
+                  className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white min-w-[200px]"
+                >
+                  {isFetchingNextPage ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...</>
+                  ) : (
+                    "Load More"
+                  )}
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="global" className="mt-0 space-y-6">
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="relative flex-1 max-w-lg mx-auto w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search Global Database (e.g. Naruto, One Piece)..."
+                  value={globalQuery}
+                  onChange={(e) => setGlobalQuery(e.target.value)}
+                  className="pl-10 h-11 bg-white/5 border-white/10 rounded-xl"
+                />
+                {isGlobalLoading && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-spin" />
+                )}
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                {["all", "tv", "movie", "ova", "special", "ona", "music"].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setGlobalType(type)}
+                    className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold border transition-all uppercase tracking-wide ${globalType === type
+                      ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
+                      : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10 hover:text-white"
+                      }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <GlobalAnimeGrid
+              items={globalAnime || []}
+              isLoading={isGlobalLoading}
+              onSelect={(anime) => {
+                setSelectedJikanAnime(anime);
+                setIsAddDialogOpen(true);
+              }}
+            />
           </TabsContent>
         </Tabs >
 
@@ -252,8 +420,8 @@ export default function Home() {
                           }
                         }}
                         className={`flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm cursor-pointer transition-all ${isSelected
-                            ? "bg-primary/20 border-primary/50 text-white"
-                            : "bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:border-white/10"
+                          ? "bg-primary/20 border-primary/50 text-white"
+                          : "bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:border-white/10"
                           }`}
                       >
                         <span>{tag}</span>
