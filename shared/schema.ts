@@ -15,6 +15,7 @@ export const anime = pgTable("anime", {
   type: text("type"),
   episodes: integer("episodes"),
   duration: text("duration"),
+  releaseYear: integer("release_year"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

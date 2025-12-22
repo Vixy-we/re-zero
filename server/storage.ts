@@ -82,7 +82,7 @@ export class MemStorage implements IStorage {
       rating: insertAnime.rating ?? null,
       notes: insertAnime.notes ?? null,
       description: insertAnime.description ?? null,
-      tags: (insertAnime.tags as unknown as string[]) ?? [],
+      tags: (insertAnime.tags as any as string[]) ?? [],
       type: insertAnime.type ?? null,
       episodes: insertAnime.episodes ?? null,
       duration: insertAnime.duration ?? null,
@@ -96,7 +96,7 @@ export class MemStorage implements IStorage {
     const existing = this.anime.get(id);
     if (!existing) return undefined;
 
-    const updated = { ...existing, ...updates };
+    const updated = { ...existing, ...updates } as Anime;
     this.anime.set(id, updated);
     return updated;
   }

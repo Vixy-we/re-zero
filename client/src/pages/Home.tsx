@@ -4,11 +4,14 @@ import { AddAnimeDialog } from "@/components/AddAnimeDialog";
 import { AnimeCard } from "@/components/AnimeCard";
 import { AnimeDetailsDialog } from "@/components/AnimeDetailsDialog";
 import type { Anime } from "@shared/schema";
-import { Loader2, LayoutGrid, List, Database } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Loader2, LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Home() {
   const { data: animeList, isLoading } = useAnimeList();
@@ -16,7 +19,12 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("watched");
   const [sortBy, setSortBy] = useState<"title" | "rating" | "newest">("newest");
-  const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [tempFilterTags, setTempFilterTags] = useState<string[]>([]);
+  const [excludeTags, setExcludeTags] = useState<string[]>([]);
+  const [tempExcludeInput, setTempExcludeInput] = useState("");
+  const [isExcludeOpen, setIsExcludeOpen] = useState(false);
 
   const tabs = [
     { id: "watched", label: "Watched" },
@@ -34,8 +42,16 @@ export default function Home() {
       filtered = filtered.filter(a => a.title.toLowerCase().includes(search.toLowerCase()));
     }
 
-    if (filterTag) {
-      filtered = filtered.filter(a => a.tags?.includes(filterTag));
+    if (filterTags.length > 0) {
+      filtered = filtered.filter(a =>
+        filterTags.every(tag => a.tags?.includes(tag))
+      );
+    }
+
+    if (excludeTags.length > 0) {
+      filtered = filtered.filter(a =>
+        !excludeTags.some(tag => a.tags?.includes(tag))
+      );
     }
 
     return filtered.sort((a, b) => {
@@ -115,6 +131,19 @@ export default function Home() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+
+              <Button
+                variant="outline"
+                className={`bg-secondary/50 border-white/10 rounded-full px-4 ${filterTags.length > 0 ? 'text-primary border-primary/50 bg-primary/10' : ''}`}
+                onClick={() => {
+                  setTempFilterTags(filterTags);
+                  setIsFilterOpen(true);
+                }}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filter {filterTags.length > 0 && `(${filterTags.length})`}
+              </Button>
+
               <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
                 <SelectTrigger className="w-full sm:w-[140px] bg-secondary/50 border-white/10 rounded-full px-4">
                   <SelectValue placeholder="Sort" />
@@ -131,30 +160,38 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Tags Bar */}
-          {allTags.length > 0 && (
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
+
+
+          {/* Active Filters Display */}
+          {/* Active Filters Display */}
+          {(filterTags.length > 0 || excludeTags.length > 0) && activeTab !== "global" && (
+            <div className="flex flex-wrap gap-2 mb-6 animate-in fade-in slide-in-from-top-2">
               <button
-                onClick={() => setFilterTag(null)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${filterTag === null ? "bg-primary text-white border-primary" : "bg-transparent border-white/10 hover:border-white/30 text-muted-foreground"
-                  }`}
+                onClick={() => { setFilterTags([]); setExcludeTags([]); }}
+                className="px-3 py-1 rounded-full text-xs font-medium border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap flex items-center gap-1 group"
               >
-                All
+                <FilterX className="w-3 h-3 group-hover:scale-110 transition-transform" /> Clear
               </button>
-              {allTags.map(tag => (
+              {filterTags.map(tag => (
                 <button
                   key={tag}
-                  onClick={() => setFilterTag(tag === filterTag ? null : tag)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${filterTag === tag ? "bg-primary text-white border-primary" : "bg-transparent border-white/10 hover:border-white/30 text-muted-foreground"
-                    }`}
+                  onClick={() => setFilterTags(prev => prev.filter(t => t !== tag))}
+                  className="px-3 py-1 rounded-full text-xs font-bold border border-primary bg-primary text-white shadow-md shadow-primary/20 hover:bg-primary/80 transition-all flex items-center group"
+                >
+                  {tag}
+                </button>
+              ))}
+              {excludeTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setExcludeTags(prev => prev.filter(t => t !== tag))}
+                  className="px-3 py-1 rounded-full text-xs font-bold border border-red-500 bg-red-500 text-white shadow-md shadow-red-500/20 hover:bg-red-600 transition-all flex items-center group"
                 >
                   {tag}
                 </button>
               ))}
             </div>
           )}
-
-          {/* Grid Content */}
           <TabsContent value="watched" className="mt-0">
             <AnimeGrid
               items={getFilteredList('watched')}
@@ -181,14 +218,106 @@ export default function Home() {
               </p>
             </div>
           </TabsContent>
-        </Tabs>
+        </Tabs >
 
-      </div>
+      </div >
 
       <AnimeDetailsDialog
         anime={selectedAnime}
         onClose={() => setSelectedAnime(null)}
       />
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent className="sm:max-w-lg bg-zinc-950/95 border-white/10 text-white gap-0 p-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-white/10">
+            <DialogTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-primary" /> Filter by Tags
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="p-6 space-y-6">
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Include</label>
+              <ScrollArea className="h-[200px] pr-4 border rounded-md border-white/5 bg-black/20 p-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {allTags.map((tag) => {
+                    const isSelected = tempFilterTags.includes(tag);
+                    return (
+                      <div
+                        key={tag}
+                        onClick={() => {
+                          if (isSelected) {
+                            setTempFilterTags(prev => prev.filter(t => t !== tag));
+                          } else {
+                            setTempFilterTags(prev => [...prev, tag]);
+                          }
+                        }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm cursor-pointer transition-all ${isSelected
+                            ? "bg-primary/20 border-primary/50 text-white"
+                            : "bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:border-white/10"
+                          }`}
+                      >
+                        <span>{tag}</span>
+                        {isSelected && <Check className="w-4 h-4 text-primary" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => setIsExcludeOpen(!isExcludeOpen)}
+                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider hover:text-white transition-colors"
+              >
+                Exclude {isExcludeOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+
+              {isExcludeOpen && (
+                <div className="animate-in slide-in-from-top-2">
+                  <Input
+                    placeholder="e.g. Horror, Mecha (comma separated)"
+                    value={tempExcludeInput}
+                    onChange={(e) => setTempExcludeInput(e.target.value)}
+                    className="bg-black/20 border-white/10 text-white placeholder:text-muted-foreground/50"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Enter tags separated by commas.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="p-6 pt-0 sm:justify-between items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setTempFilterTags([]);
+                setTempExcludeInput("");
+              }}
+              className="text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+            >
+              <FilterX className="w-4 h-4 mr-2" /> Clear Filters
+            </Button>
+            <Button
+              onClick={() => {
+                setFilterTags(tempFilterTags);
+                const newExcludes = tempExcludeInput
+                  .split(",")
+                  .map(s => s.trim())
+                  .filter(s => s.length > 0);
+                setExcludeTags(newExcludes);
+                setIsFilterOpen(false);
+              }}
+              className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+            >
+              Apply Filter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

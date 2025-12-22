@@ -8,16 +8,18 @@ const mapToAnime = (row: any): Anime => ({
   ...row,
   malId: row.mal_id,
   imageUrl: row.image_url,
+  releaseYear: row.release_year,
   createdAt: row.created_at ? new Date(row.created_at) : null,
 });
 
 // Helper to map Frontend camelCase to DB snake_case
 const mapToDb = (data: Partial<InsertAnime> & { createdAt?: Date }) => {
-  const { malId, imageUrl, createdAt, ...rest } = data;
+  const { malId, imageUrl, releaseYear, createdAt, ...rest } = data;
   return {
     ...rest,
     ...(malId !== undefined && { mal_id: malId }),
     ...(imageUrl !== undefined && { image_url: imageUrl }),
+    ...(releaseYear !== undefined && { release_year: releaseYear }),
     // created_at is automatic or managed elsewhere usually
   };
 };
@@ -33,6 +35,7 @@ export type JikanAnime = {
   type: string;
   episodes: number;
   duration: string;
+  aired: { from: string };
 };
 
 export function useAnimeList() {
