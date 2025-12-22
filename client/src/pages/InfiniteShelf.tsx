@@ -1,9 +1,11 @@
 
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
-import { useLocation } from 'wouter';
+import { Loader2, Sun, Moon } from 'lucide-react';
+import { useLocation, useRoute } from 'wouter';
 import { useAnimeList } from "@/hooks/use-anime"; // Fixed import
+
+const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 // --- Types ---
 interface Image {
@@ -67,21 +69,34 @@ const AlbumCover = ({ album, onClick }: { album: Album; onClick: (a: Album) => v
     <div
         onClick={() => onClick(album)}
         className={`perspective-container relative w-[14vw] h-[19vw] max-w-[200px] max-h-[280px] min-w-[100px] min-h-[140px] 
-               ${album.color} border border-white/10 cursor-pointer 
+               ${album.color} cursor-pointer 
                transform transition-all duration-500 ease-out
-               hover:scale-125 hover:z-50 hover:shadow-[0_20px_50px_rgba(0,0,0,0.6)]
-               group flex-shrink-0 mx-8 shadow-2xl origin-bottom`}
+               hover:scale-110 hover:-translate-y-4 hover:z-50 hover:shadow-[0_30px_60px_rgba(0,0,0,0.8)]
+               group flex-shrink-0 mx-8 shadow-2xl origin-bottom
+               border-l-[12px] border-l-black/30 rounded-r-[4px] border-t border-t-white/10`}
         style={{ transformStyle: 'preserve-3d' }}
     >
-        <div className="absolute inset-0 border-[4px] border-black/20 pointer-events-none" />
-        <div className="absolute inset-0 p-4 flex flex-col justify-end items-center">
-            <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 border border-white/10 opacity-60 group-hover:opacity-100 transition-opacity">
-                <span className="text-[1.2vw] sm:text-[9px] font-mono text-white/90 tracking-[0.3em] uppercase truncate w-full block text-center shadow-sm">
+        {/* Spine Highlight (Left) - Vintage Gold/Metallic hint */}
+        <div className="absolute top-0 bottom-0 left-[-12px] w-[12px] h-full bg-gradient-to-r from-transparent to-white/10 opacity-50 block" />
+
+        {/* Vintage Paper Overlay (Grain) */}
+        <div className="absolute inset-0 opacity-30 pointer-events-none mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/cardboard.png')]" />
+
+        {/* 3D Depth Shading - Inner Spine */}
+        <div className="absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-black/30 to-transparent pointer-events-none z-10" />
+
+        {/* Page Thickness Effect (Right Edge) */}
+        <div className="absolute top-[2px] bottom-[2px] right-0 w-[4px] bg-sky-50/10 border-l border-white/5" />
+
+        <div className="absolute inset-0 p-4 flex flex-col justify-end items-center z-20">
+            {/* Title Badge - Opaque vintage sticker style */}
+            <div className="w-full bg-black/60 backdrop-blur-md border px-2 py-2 border-white/10 shadow-lg relative overflow-hidden group-hover:bg-black/80 transition-colors">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 opacity-50" />
+                <span className="text-[1.2vw] sm:text-[9px] font-mono text-white/90 tracking-[0.2em] font-bold uppercase truncate w-full block text-center relative z-10">
                     {album.title}
                 </span>
             </div>
         </div>
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')]" />
     </div>
 );
 
@@ -287,9 +302,36 @@ export default function InfiniteShelf() {
     const [booksPerRow, setBooksPerRow] = useState(3);
     const [isReady, setIsReady] = useState(false);
     const [location, setLocation] = useLocation();
+    const [match, params] = useRoute("/infinite-shelf/:slug");
 
     // Extract unique tags and create "Albums" from them
     const allTags = Array.from(new Set(animeList?.flatMap(a => a.tags || []) || [])).sort();
+
+    // Sync URL params to Album selection
+    useEffect(() => {
+        if (!racks.length) return;
+
+        if (match && params?.slug) {
+            // Find album matching slug
+            const allAlbums = racks.flatMap(r => r.albums);
+            const found = allAlbums.find(a => slugify(a.title) === params.slug);
+            if (found) {
+                if (selected?.id !== found.id) setSelected(found);
+            }
+        } else {
+            // Base route, clear selection if URL has no slug
+            // But verify we are not navigating TO a slug
+            if (selected && !match) setSelected(null);
+        }
+    }, [match, params?.slug, racks, selected?.id]);
+
+    const handleBookClick = (album: Album) => {
+        setLocation(`/infinite-shelf/${slugify(album.title)}`);
+    };
+
+    const handleCloseBook = () => {
+        setLocation('/infinite-shelf');
+    };
 
     const handleResize = useCallback(() => {
         if (typeof window === 'undefined') return;
@@ -407,9 +449,9 @@ export default function InfiniteShelf() {
     ];
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_#252525_0%,_#050505_100%)] text-stone-400 font-sans selection:bg-white selection:text-black overflow-x-hidden">
+        <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_#1a103c_0%,_#050505_100%)] text-stone-400 font-sans selection:bg-white selection:text-black overflow-x-hidden">
             <header className="sticky top-0 z-40 bg-transparent py-12 sm:py-20 px-6 text-center">
-                <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-[2px] -z-10" />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/80 to-transparent backdrop-blur-[2px] -z-10" />
 
                 {/* Back Button */}
                 <button
@@ -419,10 +461,10 @@ export default function InfiniteShelf() {
                     ← Return Home
                 </button>
 
-                <h1 className="text-2xl sm:text-5xl font-light tracking-[0.4em] sm:tracking-[0.7em] text-white/90 uppercase opacity-90 drop-shadow-lg">Archive Gallery</h1>
+                <h1 className="text-2xl sm:text-5xl font-light tracking-[0.4em] sm:tracking-[0.7em] text-white/90 uppercase opacity-90 drop-shadow-lg">Infinite Shelf</h1>
                 <div className="flex items-center justify-center gap-6 sm:gap-10 mt-6 sm:mt-10">
                     <div className="h-px w-10 sm:w-20 bg-white/20" />
-                    <p className="text-[8px] sm:text-[10px] font-mono tracking-[0.3em] sm:tracking-[0.5em] text-stone-400 uppercase">Perpetual Visual Exhibit</p>
+                    <p className="text-[8px] sm:text-[10px] font-mono tracking-[0.3em] sm:tracking-[0.5em] text-stone-400 uppercase">Visual Library of Worlds</p>
                     <div className="h-px w-10 sm:w-20 bg-white/20" />
                 </div>
             </header>
@@ -434,7 +476,7 @@ export default function InfiniteShelf() {
                         <Rack key={rack.id} rack={{
                             ...rack,
                             albums: rack.albums.map((a, i) => ({ ...a, color: colors[(idx + i) % colors.length] }))
-                        }} onAlbumClick={setSelected} />
+                        }} onAlbumClick={handleBookClick} />
                     ))
                 ) : (
                     <div className="flex flex-col items-center justify-center py-20 opacity-50">
@@ -452,7 +494,7 @@ export default function InfiniteShelf() {
                 </div>
             </main>
 
-            {selected && <BookView album={selected} onClose={() => setSelected(null)} />}
+            {selected && <BookView album={selected} onClose={handleCloseBook} />}
         </div>
     );
 }

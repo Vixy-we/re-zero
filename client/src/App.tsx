@@ -11,6 +11,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/infinite-shelf/:slug" component={InfiniteShelf} />
       <Route path="/infinite-shelf" component={InfiniteShelf} />
       <Route component={NotFound} />
     </Switch>

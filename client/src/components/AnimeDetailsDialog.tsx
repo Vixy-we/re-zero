@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpdateAnime, useDeleteAnime } from "@/hooks/use-anime";
 import type { Anime } from "@shared/schema";
-import { Star, Trash2, X, Edit2, Save, Calendar, Clock, BookOpen } from "lucide-react";
+import { Star, Trash2, X, Edit2, Save, Calendar, Clock, BookOpen, Check, Circle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,7 +46,8 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
       setTags(anime.tags || []);
       setIsEditing(false);
     }
-  }, [anime]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anime?.id]);
 
   const handleSave = async () => {
     if (!anime) return;
@@ -71,6 +72,20 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
     setShowDeleteAlert(false);
   };
 
+  const toggleStatus = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!anime) return;
+    const newCategory = anime.category === 'watched' ? 'plan_to_watch' : 'watched';
+
+    // Optimistic update for local UI if needed, but reliance on mutation is safer
+    setCategory(newCategory);
+
+    await updateMutation.mutateAsync({
+      id: anime.id,
+      category: newCategory,
+    });
+  };
+
   if (!anime) return null;
 
   return (
@@ -88,7 +103,7 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
             />
             <div className="absolute top-4 right-4 z-20">
               <DialogClose asChild>
-                <Button variant="ghost" size="icon" className="rounded-full bg-black/40 hover:bg-white/20 text-white backdrop-blur-md transition-all">
+                <Button variant="ghost" size="icon" className="rounded-full bg-black/40 hover:bg-white/20 text-white backdrop-blur-md transition-all border border-white/10">
                   <X className="w-5 h-5" />
                 </Button>
               </DialogClose>
@@ -223,11 +238,15 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold border ${anime.category === 'watched'
-                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        }`}>
-                        {anime.category === 'watched' ? '● Completed' : '○ Plan to Watch'}
+                      <div
+                        onClick={toggleStatus}
+                        className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold border cursor-pointer transition-all hover:scale-105 active:scale-95 ${category === 'watched'
+                          ? 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'
+                          : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                          }`}
+                        title="Click to toggle status"
+                      >
+                        {category === 'watched' ? '● Completed' : '○ Plan to Watch'}
                       </div>
 
 
