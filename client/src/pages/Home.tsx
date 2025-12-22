@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAnimeList, useJikanSearch, useJikanExplore, type JikanAnime } from "@/hooks/use-anime";
+import { useAnimeList, useJikanSearch, useJikanExplore, useCreateAnime, type JikanAnime } from "@/hooks/use-anime";
 import { AddAnimeDialog } from "@/components/AddAnimeDialog";
 import { AnimeCard } from "@/components/AnimeCard";
 import { AnimeDetailsDialog } from "@/components/AnimeDetailsDialog";
@@ -19,6 +19,24 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Home() {
   const { data: animeList, isLoading } = useAnimeList();
+  const createAnime = useCreateAnime();
+
+  const handleQuickAdd = async (anime: JikanAnime) => {
+    try {
+      await createAnime.mutateAsync({
+        malId: anime.mal_id,
+        title: anime.title,
+        imageUrl: anime.images.jpg.large_image_url || anime.images.jpg.image_url,
+        rating: 0,
+        category: "plan_to_watch",
+        tags: anime.genres?.map(g => g.name) || [],
+        notes: ""
+      });
+    } catch (e) {
+      // Error handled by hook toast
+    }
+  };
+
   const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("watched");
@@ -52,6 +70,8 @@ export default function Home() {
     isLoading: isExploreLoading
   } = useJikanExplore(exploreType, exploreFilter, debouncedInclude, debouncedExclude);
 
+  // Create a Set of existing MAL IDs to check status
+  const libraryMalIds = new Set(animeList?.map(a => a.malId).filter(Boolean));
   const exploreAnime = exploreData?.pages.flatMap(page => page.data) || [];
 
   const [selectedJikanAnime, setSelectedJikanAnime] = useState<JikanAnime | null>(null);
@@ -97,7 +117,7 @@ export default function Home() {
   // Extract all unique tags for filtering
   const allTags = Array.from(new Set(animeList?.flatMap(a => a.tags || []) || [])).sort();
 
-  if (isLoading) {
+  if (isLoading && !animeList) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -331,6 +351,8 @@ export default function Home() {
               key={`${exploreFilter}-${debouncedInclude}-${debouncedExclude}`}
               items={exploreAnime}
               isLoading={isExploreLoading}
+              libraryIds={libraryMalIds}
+              onQuickAdd={handleQuickAdd}
               onSelect={(anime) => {
                 setSelectedJikanAnime(anime);
                 setIsAddDialogOpen(true);
@@ -389,6 +411,8 @@ export default function Home() {
             <GlobalAnimeGrid
               items={globalAnime || []}
               isLoading={isGlobalLoading}
+              libraryIds={libraryMalIds}
+              onQuickAdd={handleQuickAdd}
               onSelect={(anime) => {
                 setSelectedJikanAnime(anime);
                 setIsAddDialogOpen(true);

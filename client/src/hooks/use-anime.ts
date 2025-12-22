@@ -163,14 +163,17 @@ export function useJikanSearch(query: string, type?: string | null) {
 }
 
 const GENRE_MAP: Record<string, number> = {
-  "action": 1, "adventure": 2, "cars": 3, "comedy": 4, "avante garde": 5,
+  "action": 1, "adventure": 2, "rac": 3, "cars": 3, "comedy": 4, "avante garde": 5,
   "demons": 6, "mystery": 7, "drama": 8, "ecchi": 9, "fantasy": 10, "game": 11,
   "hentai": 12, "historical": 13, "horror": 14, "kids": 15, "martial arts": 17,
   "mecha": 18, "music": 19, "parody": 20, "samurai": 21, "romance": 22,
-  "school": 23, "sci-fi": 24, "shoujo": 25, "shounen": 27, "space": 29,
-  "sports": 30, "super power": 31, "vampire": 32, "slice of life": 36,
+  "school": 23, "sci-fi": 24, "scifi": 24, "shoujo": 25, "girls love": 26, "gl": 26, "yuri": 26,
+  "shounen": 27, "shonen": 27, "boys love": 28, "bl": 28, "yao": 28, "space": 29,
+  "sports": 30, "super power": 31, "vampire": 32, "harem": 35, "slice of life": 36, "sol": 36,
   "supernatural": 37, "military": 38, "police": 39, "psychological": 40,
-  "thriller": 41, "seinen": 42, "josei": 43
+  "thriller": 41, "suspense": 41, "seinen": 42, "josei": 43,
+  "award winning": 46, "gourmet": 47, "work life": 48, "erotica": 49,
+  "isekai": 62, "cyberpunk": 50, "magical girl": 81
 };
 
 export function useJikanExplore(type?: string | null, filter?: string | null, includeTags?: string, excludeTags?: string) {
