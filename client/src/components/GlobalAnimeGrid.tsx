@@ -46,6 +46,7 @@ export function GlobalAnimeGrid({ items, onSelect, isLoading, libraryIds, onQuic
 
 function GlobalAnimeCard({ anime, onClick, isAdded, onQuickAdd }: { anime: JikanAnime; onClick: (anime: JikanAnime) => void; isAdded?: boolean; onQuickAdd?: (anime: JikanAnime) => void }) {
     const imageUrl = anime.images.jpg.large_image_url || anime.images.jpg.image_url;
+    const displayTitle = anime.title_english || anime.title;
 
     return (
         <motion.div
@@ -60,7 +61,7 @@ function GlobalAnimeCard({ anime, onClick, isAdded, onQuickAdd }: { anime: Jikan
             <div className="aspect-[2/3] rounded-lg overflow-hidden shadow-lg shadow-black/40 border border-white/5 relative z-10">
                 <img
                     src={imageUrl}
-                    alt={anime.title}
+                    alt={displayTitle}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
 
@@ -81,17 +82,17 @@ function GlobalAnimeCard({ anime, onClick, isAdded, onQuickAdd }: { anime: Jikan
                             e.stopPropagation();
                             if (!isAdded && onQuickAdd) onQuickAdd(anime);
                         }}
-                        className={`pointer-events-auto text-white rounded-full p-3 shadow-lg transform scale-90 group-hover:scale-100 transition-transform ${isAdded ? 'bg-green-500/90' : 'bg-primary/90 cursor-pointer hover:bg-primary hover:scale-110'}`}
+                        className={`pointer-events-auto text-white rounded-full p-4 shadow-lg transform scale-90 group-hover:scale-100 transition-transform ${isAdded ? 'bg-green-500/90' : 'bg-primary/90 cursor-pointer hover:bg-primary hover:scale-110'}`}
                         title={isAdded ? "Already in Library" : "Quick Add to Plan to Watch"}
                     >
-                        {isAdded ? <Check className="w-8 h-8" /> : <Plus className="w-8 h-8" />}
+                        {isAdded ? <Check className="w-12 h-12" /> : <Plus className="w-12 h-12" />}
                     </div>
                 </div>
 
                 {/* Bottom Info */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
                     <h3 className="font-display font-bold text-sm text-white mb-1 line-clamp-2 text-shadow text-center">
-                        {anime.title}
+                        {displayTitle}
                     </h3>
                     <div className="flex justify-center items-center gap-2 text-xs text-gray-300">
                         <span className="flex items-center gap-1">
@@ -107,7 +108,7 @@ function GlobalAnimeCard({ anime, onClick, isAdded, onQuickAdd }: { anime: Jikan
             {/* Static Title below card for normal view */}
             <div className="mt-3 group-hover:opacity-0 transition-opacity duration-200">
                 <h3 className={`font-semibold text-sm line-clamp-1 truncate ${isAdded ? 'text-green-400' : 'text-white/90'}`}>
-                    {isAdded ? '✓ ' + anime.title : anime.title}
+                    {isAdded ? '✓ ' + displayTitle : displayTitle}
                 </h3>
                 <p className="text-xs text-muted-foreground">{anime.type || "TV"} • {anime.year || "?"}</p>
             </div>

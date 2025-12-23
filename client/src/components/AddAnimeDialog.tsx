@@ -77,7 +77,7 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
 
     await createMutation.mutateAsync({
       malId: selectedJikan.mal_id,
-      title: selectedJikan.title,
+      title: selectedJikan.title_english || selectedJikan.title,
       imageUrl: selectedJikan.images.jpg.large_image_url || selectedJikan.images.jpg.image_url,
       description: selectedJikan.synopsis,
       tags: tags,
@@ -196,7 +196,12 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
                 </div>
 
                 <div className="text-center relative z-10 w-full mb-auto">
-                  <h2 className="font-display text-xl font-bold leading-tight mb-2 line-clamp-2">{selectedJikan?.title}</h2>
+                  <h2 className="font-display text-xl font-bold leading-tight mb-1 line-clamp-2">
+                    {selectedJikan?.title_english || selectedJikan?.title}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mb-3 font-medium line-clamp-1">
+                    {(selectedJikan?.title_english && selectedJikan.title_english !== selectedJikan.title) ? selectedJikan?.title : selectedJikan?.title_japanese}
+                  </p>
                   <div className="flex flex-wrap justify-center gap-1.5">
                     {selectedJikan?.genres.slice(0, 3).map(g => (
                       <span key={g.name} className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full border border-white/5">

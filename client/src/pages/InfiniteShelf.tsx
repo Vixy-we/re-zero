@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Sun, Moon } from 'lucide-react';
 import { useLocation, useRoute } from 'wouter';
-import { useAnimeList } from "@/hooks/use-anime"; // Fixed import
+import { useAnimeList, useJikanAnimeById } from "@/hooks/use-anime"; // Fixed import
 
 const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -13,6 +13,7 @@ interface Image {
     url: string;
     rotation: number;
     title: string;
+    malId: number;
 }
 
 interface Album {
@@ -40,24 +41,34 @@ const IconX = () => (
 
 // --- Content Generators ---
 const generateImagesFromCategory = (category: string, animeList: any[]): Image[] => {
-    const matching = animeList.filter(a => a.category === category);
+    let matching = animeList.filter(a => a.category === category);
+    // Deduplicate by malId
+    matching = Array.from(new Map(matching.map(item => [item.malId, item])).values());
+    // Sort A-Z
+    matching.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+
     return matching.map((a: any, i: number) => ({
         id: `img-${a.id}`,
         url: a.imageUrl || `https://picsum.photos/seed/${a.id}/600/800`,
         rotation: Math.random() * 6 - 3,
-        title: a.title || "Untitled"
+        title: a.title || "Untitled",
+        malId: a.malId
     }));
 };
 
 const generateImagesFromTag = (tag: string, animeList: any[]): Image[] => {
-    // Filter anime by tag and map to images
-    const matching = animeList.filter(a => a.tags?.includes(tag));
-    // Flatten all images? Or just take cover images? Let's take cover images.
+    let matching = animeList.filter(a => a.tags?.includes(tag));
+    // Deduplicate by malId
+    matching = Array.from(new Map(matching.map(item => [item.malId, item])).values());
+    // Sort A-Z
+    matching.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+
     return matching.map((a: any, i: number) => ({
         id: `img-${a.id}`,
         url: a.imageUrl || `https://picsum.photos/seed/${a.id}/600/800`,
         rotation: Math.random() * 6 - 3, // Store random rotation permanently
-        title: a.title || "Untitled"
+        title: a.title || "Untitled",
+        malId: a.malId
     }));
 };
 
@@ -140,6 +151,33 @@ const getFontSizeClass = (length: number) => {
     return "text-[9px]";
 };
 
+const ShelfBook = ({ img, i, total }: { img: Image; i: number; total: number }) => {
+    const { data: jikanData } = useJikanAnimeById(img.malId || null);
+    const displayTitle = jikanData?.title_english || img.title;
+
+    return (
+        <div
+            className={`relative bg-white p-2 pb-10 shadow-md hover:shadow-2xl transition-all duration-500 delay-75 
+            rotate-[var(--rotation)] hover:rotate-0 hover:scale-110 hover:-translate-y-2 hover:z-50 transform-gpu cursor-pointer ${getGridPositionClass(i, total)}`}
+            style={{ '--rotation': `${img.rotation}deg` } as React.CSSProperties}
+        >
+            <div className="aspect-square overflow-hidden bg-gray-100 mb-2">
+                <img
+                    src={img.url}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    alt="gallery-img"
+                />
+            </div>
+            <div className="absolute bottom-1 left-2 right-2 text-center flex items-center justify-center min-h-[32px]">
+                <p className={`${getFontSizeClass(displayTitle.length)} text-gray-800 font-bold tracking-widest leading-tight opacity-80 line-clamp-3 whitespace-normal`} style={{ fontFamily: 'monospace' }}>
+                    {displayTitle}
+                </p>
+            </div>
+        </div>
+    );
+};
+
 const BookView = ({ album, onClose }: { album: Album; onClose: () => void }) => {
     const [pages, setPages] = useState<Image[][]>(album.initialPages);
     const [index, setIndex] = useState(0);
@@ -201,26 +239,7 @@ const BookView = ({ album, onClose }: { album: Album; onClose: () => void }) => 
                         <div className="absolute inset-0 flex flex-col p-6 sm:p-10 md:p-12 pr-8 sm:pr-14 z-20">
                             <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-6 transition-opacity duration-300">
                                 {leftPage.map((img, i) => (
-                                    <div
-                                        key={img.id}
-                                        className={`relative bg-white p-2 pb-10 shadow-md hover:shadow-2xl transition-all duration-500 delay-75 
-        rotate-[var(--rotation)] hover:rotate-0 hover:scale-110 hover:-translate-y-2 hover:z-50 transform-gpu cursor-pointer ${getGridPositionClass(i, leftPage.length)}`}
-                                        style={{ '--rotation': `${img.rotation}deg` } as React.CSSProperties}
-                                    >
-                                        <div className="aspect-square overflow-hidden bg-gray-100 mb-2">
-                                            <img
-                                                src={img.url}
-                                                className="w-full h-full object-cover"
-                                                loading="lazy"
-                                                alt="gallery-img"
-                                            />
-                                        </div>
-                                        <div className="absolute bottom-1 left-2 right-2 text-center flex items-center justify-center min-h-[32px]">
-                                            <p className={`${getFontSizeClass(img.title.length)} text-gray-800 font-bold tracking-widest leading-tight opacity-80 line-clamp-3 whitespace-normal`} style={{ fontFamily: 'monospace' }}>
-                                                {img.title}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <ShelfBook key={img.id} img={img} i={i} total={leftPage.length} />
                                 ))}
                             </div>
                             <div className="mt-6 flex justify-center items-center text-gray-300 font-mono text-xs tracking-widest uppercase">
@@ -253,26 +272,7 @@ const BookView = ({ album, onClose }: { album: Album; onClose: () => void }) => 
                         <div className="absolute inset-0 flex flex-col p-6 sm:p-10 md:p-12 pl-8 sm:pl-14 z-20">
                             <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-6 transition-opacity duration-300">
                                 {rightPage.map((img, i) => (
-                                    <div
-                                        key={img.id}
-                                        className={`relative bg-white p-2 pb-10 shadow-md hover:shadow-2xl transition-all duration-500 delay-75
-        rotate-[var(--rotation)] hover:rotate-0 hover:scale-110 hover:-translate-y-2 hover:z-50 transform-gpu cursor-pointer ${getGridPositionClass(i, rightPage.length)}`}
-                                        style={{ '--rotation': `${img.rotation}deg` } as React.CSSProperties}
-                                    >
-                                        <div className="aspect-square overflow-hidden bg-gray-100 mb-2">
-                                            <img
-                                                src={img.url}
-                                                className="w-full h-full object-cover"
-                                                loading="lazy"
-                                                alt="gallery-img"
-                                            />
-                                        </div>
-                                        <div className="absolute bottom-1 left-2 right-2 text-center flex items-center justify-center min-h-[32px]">
-                                            <p className={`${getFontSizeClass(img.title.length)} text-gray-800 font-bold tracking-widest leading-tight opacity-80 line-clamp-3 whitespace-normal`} style={{ fontFamily: 'monospace' }}>
-                                                {img.title}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <ShelfBook key={img.id} img={img} i={i} total={rightPage.length} />
                                 ))}
                             </div>
                             <div className="mt-6 flex justify-center items-center text-gray-300 font-mono text-xs tracking-widest uppercase">
@@ -376,11 +376,16 @@ export default function InfiniteShelf() {
         const plannedImages = generateImagesFromCategory('plan_to_watch', animeList);
 
         // Master Data: All Anime
-        const masterImages = animeList.map((a: any) => ({
+        let uniqueAnime = Array.from(new Map(animeList.map((item: any) => [item.malId, item])).values());
+        // Sort A-Z
+        uniqueAnime.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+
+        const masterImages = uniqueAnime.map((a: any) => ({
             id: `img-${a.id}`,
             url: a.imageUrl || `https://picsum.photos/seed/${a.id}/600/800`,
             rotation: Math.random() * 6 - 3,
-            title: a.title || "Untitled"
+            title: a.title || "Untitled",
+            malId: a.malId
         }));
 
         const specialRack: RackData = {

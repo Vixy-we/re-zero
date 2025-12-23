@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { Anime } from "@shared/schema";
+import { useJikanAnimeById } from "@/hooks/use-anime";
 import { Star, CheckCircle, Clock } from "lucide-react";
 
 interface AnimeCardProps {
@@ -39,6 +40,9 @@ const formatAnimeType = (anime: any) => {
 };
 
 export function AnimeCard({ anime, onClick }: AnimeCardProps) {
+  const { data: jikanData } = useJikanAnimeById(anime.malId || null);
+  const displayTitle = jikanData?.title_english || anime.title;
+
   return (
     <motion.div
       layoutId={`card-${anime.id}`}
@@ -77,7 +81,7 @@ export function AnimeCard({ anime, onClick }: AnimeCardProps) {
         {/* Bottom Info */}
         <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 transform translate-y-6 group-hover:translate-y-0 transition-transform duration-300">
           <h3 className="font-display font-bold text-sm sm:text-lg leading-tight text-white mb-1 line-clamp-2 text-shadow">
-            {anime.title}
+            {displayTitle}
           </h3>
 
           <div className="flex items-end justify-between text-xs sm:text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">

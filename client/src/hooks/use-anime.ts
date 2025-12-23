@@ -27,6 +27,8 @@ const mapToDb = (data: Partial<InsertAnime> & { createdAt?: Date }) => {
 export type JikanAnime = {
   mal_id: number;
   title: string;
+  title_english?: string; // Nullable in API
+  title_japanese?: string;
   images: { jpg: { large_image_url: string; image_url: string } };
   synopsis: string;
   genres: Array<{ name: string }>;
@@ -86,9 +88,9 @@ export function useCreateAnime() {
       if (error) throw error;
       return mapToAnime(created);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["anime-list"] });
-      toast({ title: "Added to Library", description: "Anime saved successfully." });
+      toast({ title: "Added to Library", description: `${data.title} saved successfully.` });
     },
     onError: (err) => {
       toast({ variant: "destructive", title: "Error", description: err.message });
@@ -249,5 +251,22 @@ export function useJikanExplore(type?: string | null, filter?: string | null, in
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 1,
     staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function useJikanAnimeById(malId: number | null) {
+  return useQuery({
+    queryKey: ["jikan-id", malId],
+    queryFn: async () => {
+      if (!malId) return null;
+      // Delay to avoid rate limits
+      await new Promise(resolve => setTimeout(resolve, 333));
+      const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}/full`);
+      if (!res.ok) throw new Error("Failed");
+      const json = await res.json();
+      return json.data as JikanAnime;
+    },
+    enabled: !!malId,
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 }

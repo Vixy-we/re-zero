@@ -20,20 +20,31 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export default function Home() {
   const { data: animeList, isLoading } = useAnimeList();
   const createAnime = useCreateAnime();
+  const [recentlyAdded, setRecentlyAdded] = useState<number[]>([]);
 
   const handleQuickAdd = async (anime: JikanAnime) => {
+    // Visual feedback immediately
+    if (!recentlyAdded.includes(anime.mal_id)) {
+      setRecentlyAdded(prev => [...prev, anime.mal_id]);
+    }
+
     try {
       await createAnime.mutateAsync({
         malId: anime.mal_id,
-        title: anime.title,
+        title: anime.title_english || anime.title,
         imageUrl: anime.images.jpg.large_image_url || anime.images.jpg.image_url,
         rating: 0,
         category: "plan_to_watch",
         tags: anime.genres?.map(g => g.name) || [],
         notes: ""
       });
+
+      // Remove after delay to allow visual "Tick" to be seen (delayed disappear)
+      setTimeout(() => {
+        setRecentlyAdded(prev => prev.filter(id => id !== anime.mal_id));
+      }, 1000);
     } catch (e) {
-      // Error handled by hook toast
+      setRecentlyAdded(prev => prev.filter(id => id !== anime.mal_id));
     }
   };
 
@@ -72,7 +83,12 @@ export default function Home() {
 
   // Create a Set of existing MAL IDs to check status
   const libraryMalIds = new Set(animeList?.map(a => a.malId).filter(Boolean));
-  const exploreAnime = exploreData?.pages.flatMap(page => page.data) || [];
+  const displayLibraryIds = new Set([...Array.from(libraryMalIds), ...recentlyAdded]);
+
+  // Filter out anime that are already in the library, unless recently added (to show tick animation)
+  const exploreAnime = (exploreData?.pages.flatMap(page => page.data) || []).filter(
+    a => !libraryMalIds.has(a.mal_id) || recentlyAdded.includes(a.mal_id)
+  );
 
   const [selectedJikanAnime, setSelectedJikanAnime] = useState<JikanAnime | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -88,7 +104,10 @@ export default function Home() {
   const getFilteredList = (category: string) => {
     if (!animeList) return [];
 
-    let filtered = animeList.filter(a => a.category === category);
+    // Prioritize deduplication: Create Map by MalId to ensure uniqueness
+    const uniqueList = Array.from(new Map(animeList.map(item => [item.malId, item])).values());
+
+    let filtered = uniqueList.filter(a => a.category === category);
 
     if (search) {
       filtered = filtered.filter(a => a.title.toLowerCase().includes(search.toLowerCase()));
@@ -217,11 +236,7 @@ export default function Home() {
               <div className="w-full sm:w-auto">
                 <AddAnimeDialog
                   isOpen={isAddDialogOpen}
-                  onOpenChange={(v) => {
-                    setIsAddDialogOpen(v);
-                    if (!v) setSelectedJikanAnime(null);
-                  }}
-                  initialAnime={selectedJikanAnime}
+                  onOpenChange={setIsAddDialogOpen}
                 />
               </div>
             </div>
@@ -351,12 +366,9 @@ export default function Home() {
               key={`${exploreFilter}-${debouncedInclude}-${debouncedExclude}`}
               items={exploreAnime}
               isLoading={isExploreLoading}
-              libraryIds={libraryMalIds}
+              libraryIds={displayLibraryIds}
               onQuickAdd={handleQuickAdd}
-              onSelect={(anime) => {
-                setSelectedJikanAnime(anime);
-                setIsAddDialogOpen(true);
-              }}
+              onSelect={setSelectedJikanAnime}
             />
 
             {hasNextPage && (
@@ -411,12 +423,9 @@ export default function Home() {
             <GlobalAnimeGrid
               items={globalAnime || []}
               isLoading={isGlobalLoading}
-              libraryIds={libraryMalIds}
+              libraryIds={displayLibraryIds}
               onQuickAdd={handleQuickAdd}
-              onSelect={(anime) => {
-                setSelectedJikanAnime(anime);
-                setIsAddDialogOpen(true);
-              }}
+              onSelect={setSelectedJikanAnime}
             />
           </TabsContent>
         </Tabs >
@@ -426,6 +435,14 @@ export default function Home() {
       <AnimeDetailsDialog
         anime={selectedAnime}
         onClose={() => setSelectedAnime(null)}
+      />
+
+      {/* Context Dialog for Explore/Global Card Clicks */}
+      <AddAnimeDialog
+        isOpen={!!selectedJikanAnime}
+        onOpenChange={(v) => !v && setSelectedJikanAnime(null)}
+        initialAnime={selectedJikanAnime}
+        trigger={<span className="hidden" />}
       />
       <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
         <DialogContent className="sm:max-w-lg bg-zinc-950/95 border-white/10 text-white gap-0 p-0 overflow-hidden">

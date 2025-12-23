@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUpdateAnime, useDeleteAnime } from "@/hooks/use-anime";
+import { useUpdateAnime, useDeleteAnime, useJikanAnimeById } from "@/hooks/use-anime";
 import type { Anime } from "@shared/schema";
 import { Star, Trash2, X, Edit2, Save, Calendar, Clock, BookOpen, Check, Circle } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -37,6 +37,7 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
 
   const updateMutation = useUpdateAnime();
   const deleteMutation = useDeleteAnime();
+  const { data: jikanData } = useJikanAnimeById(anime?.malId || null);
 
   useEffect(() => {
     if (anime) {
@@ -170,10 +171,15 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                 <motion.h2
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="font-display text-3xl sm:text-5xl font-bold mb-3 leading-tight text-white drop-shadow-lg"
+                  className="font-display text-3xl sm:text-5xl font-bold mb-1 leading-tight text-white drop-shadow-lg"
                 >
-                  {anime.title}
+                  {jikanData?.title_english || anime.title}
                 </motion.h2>
+                {(jikanData?.title_english || jikanData?.title_japanese) && (
+                  <p className="text-lg text-gray-400 mb-4 font-medium">
+                    {(jikanData?.title_english && jikanData.title_english !== jikanData.title) ? jikanData.title : jikanData?.title_japanese}
+                  </p>
+                )}
 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300 font-medium">
                   <span className="flex items-center bg-white/5 px-2.5 py-1 rounded-md border border-white/5 backdrop-blur-md">
