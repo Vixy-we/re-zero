@@ -6,6 +6,7 @@ import { AnimeDetailsDialog } from "@/components/AnimeDetailsDialog";
 import { Link } from "wouter";
 
 import { GlobalAnimeGrid } from "@/components/GlobalAnimeGrid";
+import { RefreshLibraryDialog } from "@/components/RefreshLibraryDialog";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { Anime } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,11 @@ export default function Home() {
         rating: 0,
         category: "plan_to_watch",
         tags: anime.genres?.map(g => g.name) || [],
-        notes: ""
+        notes: "",
+        type: anime.type,
+        episodes: anime.episodes,
+        duration: anime.duration,
+        releaseYear: anime.year
       });
 
       // Remove after delay to allow visual "Tick" to be seen (delayed disappear)
@@ -93,9 +98,14 @@ export default function Home() {
   const [selectedJikanAnime, setSelectedJikanAnime] = useState<JikanAnime | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
+  // Calculate counts (deduplicated)
+  const uniqueList = animeList ? Array.from(new Map(animeList.map(item => [item.malId, item])).values()) : [];
+  const watchedCount = uniqueList.filter(a => a.category === 'watched').length;
+  const planCount = uniqueList.filter(a => a.category === 'plan_to_watch').length;
+
   const tabs = [
-    { id: "watched", label: "Watched" },
-    { id: "plan_to_watch", label: "Plan to Watch" },
+    { id: "watched", label: "Watched", count: watchedCount },
+    { id: "plan_to_watch", label: "Plan to Watch", count: planCount },
     { id: "explore", label: "Explore" },
     { id: "global", label: "Global DB" },
   ];
@@ -160,6 +170,8 @@ export default function Home() {
           </Link>
         </div>
 
+        <RefreshLibraryDialog animeList={animeList || []} />
+
         <div className="container mx-auto px-6 h-full flex flex-col justify-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -181,9 +193,9 @@ export default function Home() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Controls Bar */}
           <div className="glass-panel rounded-2xl p-4 mb-8 flex flex-col lg:flex-row gap-6 justify-between items-center">
-            {/* Scrollable Tabs Container */}
-            <div className="w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
-              <TabsList className="bg-secondary/50 p-1 border border-white/5 relative rounded-full inline-flex min-w-full lg:min-w-fit justify-start lg:justify-center">
+            {/* Wrapped Tabs Container */}
+            <div className="w-full lg:w-auto">
+              <TabsList className="bg-secondary/50 p-1 border border-white/5 relative rounded-3xl inline-flex flex-wrap w-full h-auto justify-center gap-1">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
@@ -197,7 +209,19 @@ export default function Home() {
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
                     )}
-                    {tab.label}
+
+                    <span className="relative z-10 flex items-center">
+                      {tab.label}
+                      {(tab as any).count !== undefined && (tab as any).count > 0 && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="ml-2 bg-white/15 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold"
+                        >
+                          {(tab as any).count}
+                        </motion.span>
+                      )}
+                    </span>
                   </TabsTrigger>
                 ))}
               </TabsList>

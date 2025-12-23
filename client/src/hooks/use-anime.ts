@@ -90,7 +90,7 @@ export function useCreateAnime() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["anime-list"] });
-      toast({ title: "Added to Library", description: `${data.title} saved successfully.` });
+      toast({ title: "Added to Library", description: `${data.title} saved successfully.`, duration: 2000 });
     },
     onError: (err) => {
       toast({ variant: "destructive", title: "Error", description: err.message });

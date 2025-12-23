@@ -111,8 +111,8 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
     <Dialog open={show} onOpenChange={(v) => { setShow(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button size="lg" className="w-full sm:w-auto rounded-full shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-purple-500 hover:scale-105 transition-transform font-bold tracking-wide">
-            <Plus className="mr-2 h-5 w-5" /> ADD ANIME
+          <Button size="icon" className="w-12 h-12 rounded-full shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-purple-500 hover:scale-110 transition-transform">
+            <Plus className="h-6 w-6 text-white" />
           </Button>
         )}
       </DialogTrigger>

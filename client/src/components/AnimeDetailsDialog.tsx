@@ -207,7 +207,7 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
 
               <div className="space-y-6 bg-white/5 p-6 rounded-2xl border border-white/5 backdrop-blur-sm">
                 {/* Grid: Rating & Status */}
-                <div className="grid grid-cols-2 gap-8 border-b border-white/5 pb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8 border-b border-white/5 pb-6">
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">User Rating</Label>
                     {isEditing ? (
@@ -229,6 +229,18 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                         <span className="text-lg text-muted-foreground font-medium mb-1">/10</span>
                       </div>
                     )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Community</Label>
+                    <div className="flex items-end gap-2 text-white/80">
+                      <div className="bg-white/10 p-1.5 rounded-full">
+                        <Star className="w-4 h-4 fill-white/80 text-transparent" />
+                      </div>
+                      <span className="text-2xl font-bold leading-none font-mono">
+                        {jikanData?.score ? jikanData.score : (jikanData ? 'N/A' : '--')}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-2">

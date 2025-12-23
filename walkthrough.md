@@ -28,8 +28,15 @@ Full control over your collection.
 - **Edit Details:** Click on any card in your library to open the **Details Dialog**.
     - **Update Progress:** Track episodes watched.
     - **Rate:** Give a score from 1-10.
+    - **Community Score:** View the global MyAnimeList rating alongside your own.
     - **Notes:** Add personal notes or reviews.
     - **Tags:** Manage custom tags for sorting.
+
+### 4. Data Management
+- **Hard Refresh:** A button in the top-left corner allows you to re-sync your entire library.
+    - Useful for filling missing data (like "Format") or updating titles.
+    - Features a **"Data Uplink" visual experience** to track progress with style.
+    - Processes items rapidly (approx. 2 items per second).
 - **English Titles:** The application automatically fetches and displays English titles for your library items to ensure consistency.
 
 ### 4. 📚 Infinite Shelf (3D Gallery)
