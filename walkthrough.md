@@ -1,85 +1,97 @@
-# Anime Previewer - Application Walkthrough & Manual
+# 🎌 Anime Previewer
+### *The Ultimate Immersive Anime Library Manager*
 
-## Overview
-**Anime Previewer** is a modern, visually immersive anime library management application. It allows users to track their watched and planned anime series, explore a global database of anime powered by the **Jikan API (MyAnimeList)**, and visualize their collection in a unique, 3D "Infinite Shelf" environment.
+![Banner](https://img.shields.io/badge/Status-Active-success) ![Version](https://img.shields.io/badge/Version-2.0-blue) ![License](https://img.shields.io/badge/License-MIT-lightgrey)
+
+---
+
+## 🌟 Overview
+
+**Anime Previewer** isn't just a list—it's an **experience**. Designed for the modern otaku, it transforms your simple "Watched" list into a vibrant, interactive, and 3D visual journey. 
+
+Powered by the massive **Jikan API (MyAnimeList)** and backed by **Supabase**, your collection is safe, synched, and beautiful.
 
 ---
 
 ## 🚀 Key Features
 
-### 1. Dashboard (Home)
-The central hub of your anime journey.
-- **Library Categories:** Switch seamlessly between "Watched" and "Plan to Watch" lists using the integrated tab system.
-- **Quick Stats:** View your total anime count and progress at a glance.
-- **Quote of the Day:** Get inspired by a daily random anime quote displayed at the top.
-- **Smart Cards:** Anime cards display the **English Title** by default (e.g., "Attack on Titan"), falling back to Romaji if unavailable. They feature high-quality cover art and quick-status indicators.
+### 1. 🏠 The Command Center (Dashboard)
+The heart of your library. Clean, focused, and data-rich.
+*   **📊 Smart Tabs:** Instantly toggle between **Watched** and **Plan to Watch**.
+*   **🧠 Daily Inspiration:** A new anime quote greets you every day.
+*   **✨ Intelligent Cards:** We prioritize **English Titles** (e.g., *"Attack on Titan"*) for readability, falling back to Romaji only when necessary.
 
-### 2. Global Explore & Search
-Discover new anime without leaving the app.
-- **Powered by Jikan API:** Access the massive MyAnimeList database directly.
-- **Search & Filter:** Search for specific titles or browse by Popularity, Rank, or Season. Use the "Tags" filter to include or exclude specific genres (e.g., "Action", "Romance").
-- **Quick Add:** Hover over any card in the Explore tab and click the **Plus (+)** icon. A satisfying green checkmark animation confirms the addition to your "Plan to Watch" list instantly.
-- **Infinite Scroll:** Browse endlessly with optimized performance.
-- **Scroll Preservation:** Closing an anime's detail view remembers your scroll position, so you never lose your place.
+### 2. 🌍 Global Explore & Discovery
+Find your next obsession without ever opening a new tab.
+*   **🔍 Jikan Powered:** Search the entire MAL database.
+*   **⚡ Quick-Add System:**
+    *   Hover over a card.
+    *   Click the **Plus (+)** button.
+    *   *Experience the satisfying green checkmark animation.* Done.
+*   **🎨 Smart Filters:** Sort by **Popularity**, **Rank**, or **Season** to find hidden gems.
 
-### 3. Library Management
-Full control over your collection.
-- **Add Anime:** Use the "Add Anime" button to search specifically for titles to add. The dialog shows English titles prominently with Romaji subtitles.
-- **Edit Details:** Click on any card in your library to open the **Details Dialog**.
-    - **Update Progress:** Track episodes watched.
-    - **Rate:** Give a score from 1-10.
-    - **Community Score:** View the global MyAnimeList rating alongside your own.
-    - **Notes:** Add personal notes or reviews.
-    - **Tags:** Manage custom tags for sorting.
+### 3. 🛠️ Robust Library Management
+Take full control.
+*   **📝 Details Dialog:** Click any card to edit:
+    *   **Progress Tracking:** Update episode counts.
+    *   **Rating:** Score from 1-10.
+    *   **Notes:** Add your personal review.
+    *   **Community Score:** Compare your taste with the world.
+*   **🔄 Hard Refresh System:**
+    *   *Missing data?* Hit the **Top-Left Refresh Button**.
+    *   Triggers a **"Data Uplink"** visual sequence.
+    *   Auto-fills missing metadata (English titles, formats, years) at ~2 items/sec.
 
-### 4. Data Management
-- **Hard Refresh:** A button in the top-left corner allows you to re-sync your entire library.
-    - Useful for filling missing data (like "Format") or updating titles.
-    - Features a **"Data Uplink" visual experience** to track progress with style.
-    - Processes items rapidly (approx. 2 items per second).
-- **English Titles:** The application automatically fetches and displays English titles for your library items to ensure consistency.
-
-### 4. 📚 Infinite Shelf (3D Gallery)
-A unique way to browse your collection.
-- **3D Book Experience:** Your anime are rendered as 3D books on a virtual wooden shelf.
-- **Categorized Racks:**
-    - **Master Data:** A complete, alphabetical collection of all your anime.
-    - **Watched / Plan to Watch:** Dedicated racks for your status lists.
-    - **Tag Racks:** Automatically generated racks based on your anime tags (e.g., a shelf just for "Fantasy").
-- **Interactive Reading:** Click a book to open it. Flip through pages of cover art and localized titles.
-- **Features:**
-    - **English Titles:** Books generate covers using English titles.
-    - **Alphabetical Sorting:** Racks are automatically sorted A-Z for easy finding.
-    - **Duplicate Removal:** Smart deduplication ensures each anime appears only once per rack.
-
-### 5. Technical Highlights
-- **Supabase Integration:** All your data (library, ratings, notes) is securely persisted in the cloud.
-- **Responsive Design:** Works beautifully on Desktop, Tablet, and Mobile screens.
-- **Performance:** Optimized image loading and React Query caching for snappy interactions.
+### 4. 📚 The Infinite Shelf (3D Gallery)
+*The pièce de résistance.* View your anime as a digital book collection.
+*   **🪜 Dynamic Racks:**
+    *   **Master Data:** Your entire collection, sorted A-Z.
+    *   **Status Racks:** Dedicated shelves for different statuses.
+    *   **Tag Racks:** *Auto-magically* creates shelves based on genres (e.g., "Fantasy Shelf").
+*   **📖 Interactive Books:**
+    *   Click to pull a book off the shelf.
+    *   Flip through pages featuring cover art and titles.
+    *   Click **Close (X)** to slide it back into place.
 
 ---
 
 ## 📖 User Manual
 
-### How to Add an Anime
-1. Navigate to the **Explore** tab.
-2. Browse or search for an anime.
-3. Click the **Plus (+)** button on the card.
-4. **Alternative:** Click the "Add Anime" button in the top header to search and add explicitly.
+### 📥 How to Add an Anime
+| Method | Steps |
+| :--- | :--- |
+| **Quick Add** | Go to **Explore** → Hover over card → Click `+` |
+| **Manual Search** | Click `Add Anime` in header → Search Title → Add |
 
-### How to Update Progress
-1. Click on an anime card in your **Watched** or **Plan to Watch** list.
-2. In the popup dialog, use the **Episode Counter** to increment your progress.
-3. Select a **Rating** (optional).
-4. Click **Save Changes**.
+### 📈 Updating Your Progress
+1.  Click on any anime card in your library.
+2.  In the popup:
+    *   Use the **Episode Counter** `+ / -` buttons.
+    *   Set your **Score**.
+    *   Add **Tags** (e.g., "Favorite", "Rewatch").
+3.  Click `Save Changes`.
 
-### Using the Infinite Shelf
-1. Click the **"Infinite Shelf"** link/icon in the navigation menu.
-2. Scroll down to view different racks (Master Data, Watched, Tags).
-3. **Click a Book** to pull it off the shelf and view it.
-4. Click the **Left/Right arrows** (or edges) to flip through the book's pages working like a visual gallery.
-5. Click **Close (X)** to return the book to the shelf.
+### ⚡ Troubleshooting
+> **"Why is the title in Japanese?"**
+> We try to fetch the English title first. If the official database only has the Romanized Japanese title, we display that instead to ensure accuracy.
 
-### Troubleshooting
-- **Missing English Title?** The app attempts to fetch English titles from Jikan. If none exists officially, it will display the Romaji title.
-- **Duplicate Items?** The system automatically deduplicates based on MyAnimeList IDs. If you see duplicates, try refreshing the page to trigger a re-sync.
+> **"I see duplicates!"**
+> Use the **Hard Refresh** button. It includes a smart deduplication algorithm that cleans your library while updating data.
+
+---
+
+## 💻 Tech Stack
+<details>
+<summary><strong>View Technical Details</strong></summary>
+
+*   **Frontend:** React, TypeScript, Vite
+*   **Styling:** TailwindCSS, Shadcn/UI, Framer Motion (for animations)
+*   **State Management:** React Query (TanStack Query)
+*   **Backend/DB:** Supabase (PostgreSQL)
+*   **API:** Jikan v4 (REST)
+
+</details>
+
+---
+
+*Crafted with ❤️ for an Anime Fan.*
