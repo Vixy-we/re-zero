@@ -7,9 +7,9 @@
 
 ## 🌟 Overview
 
-**Anime Previewer** isn't just a list—it's an **experience**. Designed for the modern otaku, it transforms your simple "Watched" list into a vibrant, interactive, and 3D visual journey. 
+**Anime Previewer** isn't just a list—it's an **experience**. Designed for the modern otaku, it transforms your simple library into a vibrant, interactive journey through your **Library DNA** and 3D digital shelves. 
 
-Powered by the massive **Jikan API (MyAnimeList)** and backed by **Supabase**, your collection is safe, synched, and beautiful.
+Powered by the massive **Jikan API (MyAnimeList)** and backed by **Supabase**, your collection is safe, synched, and beautifully visualized.
 
 ---
 
@@ -39,18 +39,24 @@ Take full control.
     *   **Community Score:** Compare your taste with the world.
 *   **🔄 Hard Refresh System:**
     *   *Missing data?* Hit the **Top-Left Refresh Button**.
-    *   Triggers a **"Data Uplink"** visual sequence.
-    *   Auto-fills missing metadata (English titles, formats, years) at ~2 items/sec.
+    *   **Data Uplink:** Auto-fills missing metadata (English titles, formats) and **Auto-Tags** items based on their official genres.
+    *   **Cleanup:** Deduplicates items while updating.
 
-### 4. 📚 The Infinite Shelf (3D Gallery)
+### 4. 🧬 Library DNA (Advanced Analytics)
+Unlock deep insights into your viewing habits with a stunning, physics-based visualization.
+*   **🫧 Organic Bubble Cloud:** Genres appear as floating, breathing bubbles. Larger bubbles indicate your most-popular categories.
+*   **📊 Status Breakdown:** Hover any bubble to see a mini-progress bar and high-level stats (Watched vs. Plan to Watch).
+*   **🛡️ Collision Physics:** Bubbles intelligently space themselves to prevent overlap, ensuring a clean and readable map.
+*   **🖱️ Interactive Discovery:** Drag and drop bubbles or watch them pulse with life in their idle state.
+
+### 5. 📚 The Infinite Shelf (3D Gallery)
 *The pièce de résistance.* View your anime as a digital book collection.
 *   **🪜 Dynamic Racks:**
     *   **Master Data:** Your entire collection, sorted A-Z.
     *   **Status Racks:** Dedicated shelves for different statuses.
     *   **Tag Racks:** *Auto-magically* creates shelves based on genres (e.g., "Fantasy Shelf").
 *   **📖 Interactive Books:**
-    *   Click to pull a book off the shelf.
-    *   Flip through pages featuring cover art and titles.
+    *   Click to pull a book off the shelf and flip through its pages.
     *   Click **Close (X)** to slide it back into place.
 
 ---
