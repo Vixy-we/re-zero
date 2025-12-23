@@ -7,6 +7,7 @@ import { Link } from "wouter";
 
 import { GlobalAnimeGrid } from "@/components/GlobalAnimeGrid";
 import { RefreshLibraryDialog } from "@/components/RefreshLibraryDialog";
+import { LibraryAnalytics } from "@/components/LibraryAnalytics";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { Anime } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -171,6 +172,7 @@ export default function Home() {
         </div>
 
         <RefreshLibraryDialog animeList={animeList || []} />
+        <LibraryAnalytics animeList={animeList || []} />
 
         <div className="container mx-auto px-6 h-full flex flex-col justify-center relative z-10">
           <motion.div

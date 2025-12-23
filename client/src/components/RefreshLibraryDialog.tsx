@@ -58,7 +58,8 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
             rating: anime.rating,
             notes: anime.notes,
             category: anime.category,
-            tags: anime.tags
+            // Enhance tags if missing
+            tags: (anime.tags && anime.tags.length > 0) ? anime.tags : (jikanData.genres?.map((g: any) => g.name) || []),
         });
     };
 
