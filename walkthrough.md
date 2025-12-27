@@ -59,6 +59,12 @@ Unlock deep insights into your viewing habits with a stunning, physics-based vis
     *   Click to pull a book off the shelf and flip through its pages.
     *   Click **Close (X)** to slide it back into place.
 
+### 6. 🔧 Advanced Diagnostics & Repair
+Keep your library in pristine condition with professional-grade maintenance tools.
+*   **🩺 Health Check:** The system proactively identifies items with broken metadata or missing images.
+*   **🪄 Targeted Auto-Repair:** One-click fix for minor issues. The system fetches fresh data from Jikan and patches only the broken fields.
+*   **🧙‍♂️ Manual Repair Wizard:** For complex cases, enter a step-by-step wizard to search for the correct anime match and manually re-link your library item.
+
 ---
 
 ## 📖 User Manual
