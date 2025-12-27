@@ -159,22 +159,37 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground pb-20">
 
       {/* Hero Header */}
-      <div className="relative h-[200px] md:h-[280px] bg-gradient-to-r from-background via-purple-900/10 to-background border-b border-white/5 overflow-hidden">
+      <div className="relative h-[200px] md:h-[280px] bg-gradient-to-r from-background via-purple-900/10 to-background border-b border-white/5 overflow-hidden flex flex-col">
         {/* Abstract Background pattern */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary via-background to-background" />
 
-        <div className="absolute top-6 right-6 z-50">
+        {/* Top Controls Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="relative z-50 flex items-center justify-between pt-6 container mx-auto px-6"
+        >
+          <div className="flex gap-4 items-center">
+            <RefreshLibraryDialog animeList={animeList || []} />
+            <LibraryAnalytics animeList={animeList || []} />
+            <Link href="/suggestions">
+              <Button variant="ghost" className="text-white bg-black/40 hover:bg-black/60 hover:text-white text-xs font-mono uppercase tracking-widest flex items-center gap-2 transition-all border border-white/20 hover:border-white/40 px-4 py-2 rounded-full backdrop-blur-md shadow-xl group">
+                <span className="hidden sm:inline">Suggestions</span>
+                <span className="group-hover:rotate-12 transition-transform">✨</span>
+              </Button>
+            </Link>
+          </div>
+
           <Link href="/infinite-shelf">
-            <Button variant="ghost" className="text-white/50 hover:text-white font-mono tracking-widest text-xs uppercase border border-white/10 bg-black/20 backdrop-blur-sm transition-all hover:bg-black/40 hover:border-white/20">
-              Infinite SHELF →
+            <Button variant="ghost" className="text-white bg-black/40 hover:bg-black/60 hover:text-white text-xs font-mono uppercase tracking-widest flex items-center gap-2 transition-all border border-white/20 hover:border-white/40 px-4 py-2 rounded-full backdrop-blur-md shadow-xl group">
+              <span className="hidden sm:inline">Infinite SHELF</span>
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
             </Button>
           </Link>
-        </div>
+        </motion.div>
 
-        <RefreshLibraryDialog animeList={animeList || []} />
-        <LibraryAnalytics animeList={animeList || []} />
-
-        <div className="container mx-auto px-6 h-full flex flex-col justify-center relative z-10">
+        <div className="container mx-auto px-6 flex-1 flex flex-col justify-center relative z-10 pb-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

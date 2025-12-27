@@ -42,6 +42,7 @@ Take full control.
     *   **Data Uplink:** Auto-fills missing metadata (English titles, formats) and **Auto-Tags** items based on their official genres.
     *   **Cleanup:** Deduplicates items while updating.
 
+
 ### 4. 🧬 Library DNA (Advanced Analytics)
 Unlock deep insights into your viewing habits with a stunning, physics-based visualization.
 *   **🫧 Organic Bubble Cloud:** Genres appear as floating, breathing bubbles. Larger bubbles indicate your most-popular categories.
@@ -49,7 +50,19 @@ Unlock deep insights into your viewing habits with a stunning, physics-based vis
 *   **🛡️ Collision Physics:** Bubbles intelligently space themselves to prevent overlap, ensuring a clean and readable map.
 *   **🖱️ Interactive Discovery:** Drag and drop bubbles or watch them pulse with life in their idle state.
 
-### 5. 📚 The Infinite Shelf (3D Gallery)
+### 5. 🧪 Suggestions (Beta)
+The new **Recommendation Engine** that builds a personalized recipe for your next watch.
+*   **Draggable Interface:**
+    *   **Like Bucket (Green):** Drag favorite anime here to find similar shows.
+    *   **Dislike Bucket (Red):** Drag anime you didn't enjoy here to avoid similar recommendations.
+*   **Smart Filtering:**
+    *   **Format:** Filter by TV, Movie, OVA, etc.
+    *   **Genres:** Click to "Like" (Green) or "Dislike" (Red, with Thumbs Down icon).
+*   **Visual Feedback:**
+    *   **Sidebar Ratings:** Clear yellow star icons for your user rating.
+    *   **Tooltips:** Hover over small cards in buckets to see full titles.
+
+### 6. 📚 The Infinite Shelf (3D Gallery)
 *The pièce de résistance.* View your anime as a digital book collection.
 *   **🪜 Dynamic Racks:**
     *   **Master Data:** Your entire collection, sorted A-Z.
@@ -59,7 +72,7 @@ Unlock deep insights into your viewing habits with a stunning, physics-based vis
     *   Click to pull a book off the shelf and flip through its pages.
     *   Click **Close (X)** to slide it back into place.
 
-### 6. 🔧 Advanced Diagnostics & Repair
+### 7. 🔧 Advanced Diagnostics & Repair
 Keep your library in pristine condition with professional-grade maintenance tools.
 *   **🩺 Health Check:** The system proactively identifies items with broken metadata or missing images.
 *   **🪄 Targeted Auto-Repair:** One-click fix for minor issues. The system fetches fresh data from Jikan and patches only the broken fields.
@@ -74,6 +87,7 @@ Keep your library in pristine condition with professional-grade maintenance tool
 | :--- | :--- |
 | **Quick Add** | Go to **Explore** → Hover over card → Click `+` |
 | **Manual Search** | Click `Add Anime` in header → Search Title → Add |
+| **Get Suggestions** | Go to **Suggestions** → Drag preferences → Click Generate |
 
 ### 📈 Updating Your Progress
 1.  Click on any anime card in your library.
@@ -98,6 +112,9 @@ Keep your library in pristine condition with professional-grade maintenance tool
 
 *   **Frontend:** React, TypeScript, Vite
 *   **Styling:** TailwindCSS, Shadcn/UI, Framer Motion (for animations)
+*   **Backend:** Supabase (PostgreSQL)
+*   **Data Source:** Jikan API (MyAnimeList)
+</details>
 *   **State Management:** React Query (TanStack Query)
 *   **Backend/DB:** Supabase (PostgreSQL)
 *   **API:** Jikan v4 (REST)

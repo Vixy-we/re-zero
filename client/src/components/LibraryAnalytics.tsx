@@ -173,14 +173,14 @@ export function LibraryAnalytics({ animeList }: LibraryAnalyticsProps) {
 
     return (
         <>
-            <div className="absolute top-6 left-48 z-[100]">
+            <div className="z-[100]">
                 <Button
                     variant="ghost"
                     onClick={() => setIsOpen(true)}
                     className="text-white bg-black/40 hover:bg-black/60 hover:text-white text-xs font-mono uppercase tracking-widest flex items-center gap-2 transition-all border border-white/20 hover:border-white/40 px-4 py-2 rounded-full backdrop-blur-md shadow-xl"
                 >
                     <Activity className="w-3 h-3 text-purple-400" />
-                    Analytics
+                    <span className="hidden sm:inline">Analytics</span>
                 </Button>
             </div>
 

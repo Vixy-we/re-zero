@@ -270,3 +270,39 @@ export function useJikanAnimeById(malId: number | null) {
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 }
+
+// ============================================
+// RECOMMENDATION HOOKS
+// ============================================
+
+export function useJikanSuggestions(genresInclude: number[], genresExclude: number[]) {
+  return useQuery({
+    queryKey: ["jikan-suggestions", genresInclude, genresExclude],
+    queryFn: async () => {
+      // Base recommendation logic:
+      // Jikan API doesn't have a direct "personalized recommendation" endpoint in V4 based on POST data.
+      // We simulate it using the Search endpoint with detailed filters.
+      // We primarily filter by Genre inclusion/exclusion.
+
+      let url = `https://api.jikan.moe/v4/anime?order_by=popularity&sfw=true&min_score=7&limit=24`;
+
+      if (genresInclude.length > 0) {
+        url += `&genres=${genresInclude.join(',')}`;
+      }
+
+      if (genresExclude.length > 0) {
+        url += `&genres_exclude=${genresExclude.join(',')}`;
+      }
+
+      // Add a randomizer factor (page) if it's broad
+      // To keep it "fresh", we could pick a random page if filters are broad
+      // For now, page 1 is safest for relevancy.
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch suggestions");
+      const data = await res.json();
+      return data.data as JikanAnime[];
+    },
+    enabled: false, // Trigger manual execution
+  });
+}
