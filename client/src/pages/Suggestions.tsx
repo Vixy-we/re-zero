@@ -152,39 +152,101 @@ export default function Suggestions() {
     const generateRecommendations = async () => {
         setIsGenerating(true);
         try {
-            const explicitLiked = new Set(likedGenres);
-            const explicitDisliked = new Set(dislikedGenres);
+            let newRecs = [];
 
-            likedAnime.forEach(anime => {
-                anime.tags?.forEach(tag => {
-                    const id = getGenreId(tag);
-                    if (id && !explicitDisliked.has(id)) explicitLiked.add(id);
+            // STRATEGY 1: Smart Similarity (DISABLED for legacy mode)
+            if (false) {
+                console.log("Using Smart Suggestion Engine...");
+
+                // Fetch Recommendations for ALL liked anime in parallel
+                const promises = likedAnime.map(anime =>
+                    fetch(`https://api.jikan.moe/v4/anime/${anime.malId}/recommendations`)
+                        .then(res => res.json())
+                        .then(data => ({ sourceId: anime.malId, recs: data.data || [] }))
+                        .catch(err => ({ sourceId: anime.malId, recs: [] }))
+                );
+
+                const allResults = await Promise.all(promises);
+
+                // Aggregate & Score
+                const scoreMap = new Map();
+                const libraryMalIds = new Set(libraryList?.map(a => a.malId));
+                const dislikedMalIds = new Set(dislikedAnime.map(a => a.malId));
+
+                allResults.forEach(({ sourceId, recs }) => {
+                    recs.forEach((rec: any) => {
+                        const anime = rec.entry;
+                        const votes = rec.votes || 0;
+
+                        if (libraryMalIds.has(anime.mal_id)) return;
+                        if (dislikedMalIds.has(anime.mal_id)) return;
+
+                        if (!scoreMap.has(anime.mal_id)) {
+                            scoreMap.set(anime.mal_id, {
+                                data: anime,
+                                score: 0,
+                                votes: 0,
+                                sources: []
+                            });
+                        }
+
+                        const entry = scoreMap.get(anime.mal_id);
+                        entry.votes += votes;
+                        entry.sources.push(sourceId);
+                        entry.score += 10 + (votes / 10);
+                    });
                 });
-            });
 
-            dislikedAnime.forEach(anime => {
-                anime.tags?.forEach(tag => {
-                    const id = getGenreId(tag);
-                    if (id && !explicitLiked.has(id)) explicitDisliked.add(id);
+                newRecs = Array.from(scoreMap.values())
+                    .sort((a: any, b: any) => b.score - a.score)
+                    .slice(0, 20)
+                    .map((item: any) => ({
+                        ...item.data,
+                        smart_score: Math.round(item.score),
+                        source_count: item.sources.length,
+                        total_votes: item.votes
+                    }));
+            }
+
+            // STRATEGY 2: Legacy Genre Filtering (Always Active)
+            if (true) {
+                console.log("Using Fallback Genre Engine...");
+                const explicitLiked = new Set(likedGenres);
+                const explicitDisliked = new Set(dislikedGenres);
+
+                likedAnime.forEach(anime => {
+                    anime.tags?.forEach(tag => {
+                        const id = getGenreId(tag);
+                        if (id && !explicitDisliked.has(id)) explicitLiked.add(id);
+                    });
                 });
-            });
 
-            const genreQuery = Array.from(explicitLiked).join(',');
-            const excludeQuery = Array.from(explicitDisliked).join(',');
+                dislikedAnime.forEach(anime => {
+                    anime.tags?.forEach(tag => {
+                        const id = getGenreId(tag);
+                        if (id && !explicitLiked.has(id)) explicitDisliked.add(id);
+                    });
+                });
 
-            let url = `https://api.jikan.moe/v4/anime?order_by=popularity&sfw=true&min_score=7`;
+                const genreQuery = Array.from(explicitLiked).join(',');
+                const excludeQuery = Array.from(explicitDisliked).join(',');
 
-            if (explicitLiked.size > 0) url += `&genres=${genreQuery}`;
-            if (explicitDisliked.size > 0) url += `&genres_exclude=${excludeQuery}`;
-            if (selectedType) url += `&type=${selectedType}`;
+                let url = `https://api.jikan.moe/v4/anime?order_by=popularity&sfw=true&min_score=7`;
 
-            const response = await fetch(url);
-            const data = await response.json();
+                if (explicitLiked.size > 0) url += `&genres=${genreQuery}`;
+                if (explicitDisliked.size > 0) url += `&genres_exclude=${excludeQuery}`;
+                if (selectedType) url += `&type=${selectedType}`;
 
+                const response = await fetch(url);
+                const data = await response.json();
+                newRecs = data.data || [];
+            }
+
+            // Common Deduplication (Filter out Library items)
             const libraryMalIds = new Set(libraryList?.map(a => a.malId));
-            const newRecs = data.data.filter((a: any) => !libraryMalIds.has(a.mal_id));
+            const filteredRecs = newRecs.filter((a: any) => !libraryMalIds.has(a.mal_id));
 
-            setRecommendations(newRecs);
+            setRecommendations(filteredRecs);
 
         } catch (error) {
             console.error("Failed to generate recommendations", error);
@@ -486,7 +548,7 @@ export default function Suggestions() {
                                             episodes: anime.episodes || 0,
                                             tags: anime.genres?.map((g: any) => g.name) || [],
                                             createdAt: new Date(),
-                                            category: "plan_to_watch",
+                                            category: "suggestion",
                                             notes: "",
                                             description: anime.synopsis || null,
                                             type: anime.type,

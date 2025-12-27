@@ -12,7 +12,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import type { Anime } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Loader2, LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp, Sparkles, BrainCircuit } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -174,9 +174,15 @@ export default function Home() {
             <RefreshLibraryDialog animeList={animeList || []} />
             <LibraryAnalytics animeList={animeList || []} />
             <Link href="/suggestions">
-              <Button variant="ghost" className="text-white bg-black/40 hover:bg-black/60 hover:text-white text-xs font-mono uppercase tracking-widest flex items-center gap-2 transition-all border border-white/20 hover:border-white/40 px-4 py-2 rounded-full backdrop-blur-md shadow-xl group">
+              <Button variant="outline" className="gap-2 border-white/5 bg-white/5 hover:bg-white/10 hover:border-primary/50 transition-all group">
+                <Sparkles className="w-4 h-4 text-yellow-400 group-hover:text-yellow-300 transition-colors" />
                 <span className="hidden sm:inline">Suggestions</span>
-                <span className="group-hover:rotate-12 transition-transform">✨</span>
+              </Button>
+            </Link>
+            <Link href="/smart-suggestions">
+              <Button variant="outline" className="gap-2 border-purple-500/20 bg-purple-500/10 hover:bg-purple-500/20 hover:border-purple-500/50 transition-all group">
+                <BrainCircuit className="w-4 h-4 text-purple-400 group-hover:text-purple-300 transition-colors" />
+                <span className="hidden sm:inline">Smart Engine</span>
               </Button>
             </Link>
           </div>

@@ -8,26 +8,21 @@ interface AnimeCardProps {
   onClick: (anime: Anime) => void;
 }
 
-const formatAnimeType = (anime: any) => {
+const formatAnimeType = (anime: any, jikanDetails?: any) => {
   if (!anime) return "Loading...";
 
-  // 1. Debugging: This will show you the real data structure in the Console (F12)
-  console.log("Anime data received:", anime);
+  // Priority: Prop Data -> Jikan API Data -> "Unknown"
+  const type = anime.type || jikanDetails?.type;
+  const episodes = anime.episodes || jikanDetails?.episodes;
+  const duration = anime.duration || jikanDetails?.duration;
 
-  // Since this is from your DB, use the fields directly from the anime object
-  const type = anime.type;
-  const episodes = anime.episodes;
-  const duration = anime.duration;
-
-  // 4. Logic with fallbacks
   if (!type) {
-    return "Format Unknown";
+    return "Format Unknown"; // Still unknown implies API fetch failed
   }
 
-  const typeUpper = type.toUpperCase(); // Normalize to "TV", "MOVIE", etc.
+  const typeUpper = type.toUpperCase();
 
   if (typeUpper === 'MOVIE') {
-    // If duration is missing, just return "Movie"
     return `Movie ${duration ? duration.replace(/\./g, "") : ''}`.trim();
   }
 
@@ -35,7 +30,6 @@ const formatAnimeType = (anime: any) => {
     return `Series ${episodes || '?'} episodes`;
   }
 
-  // Handles OVA, ONA, Special, Music
   return `${type} ${episodes || '1'} ep`;
 };
 
@@ -67,7 +61,7 @@ export function AnimeCard({ anime, onClick }: AnimeCardProps) {
 
         {/* Status Indicator */}
         <div className="absolute top-2 right-2">
-          {anime.category === "watched" ? (
+          {anime.category === "suggestion" ? null : anime.category === "watched" ? (
             <div className="bg-green-500/20 backdrop-blur-md p-1.5 rounded-full border border-green-500/50">
               <CheckCircle className="w-4 h-4 text-green-400" />
             </div>
@@ -89,7 +83,7 @@ export function AnimeCard({ anime, onClick }: AnimeCardProps) {
             <div className="flex flex-col gap-1">
               <div className="flex items-center text-accent">
                 <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current mr-1" />
-                <span className="font-mono font-bold leading-none">{anime.rating || "N/A"}</span>
+                <span className="font-mono font-bold leading-none">{anime.rating || jikanData?.score || "N/A"}</span>
               </div>
               <span className="text-[10px] text-muted-foreground truncate max-w-[60px] sm:max-w-[80px]">
                 {anime.tags && anime.tags.length > 0 ? anime.tags[0] : ""}
@@ -98,7 +92,7 @@ export function AnimeCard({ anime, onClick }: AnimeCardProps) {
 
             {/* Right: Type Info */}
             <span className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[120px] text-right mb-0.5">
-              {formatAnimeType(anime)}
+              {formatAnimeType(anime, jikanData)}
             </span>
           </div>
         </div>

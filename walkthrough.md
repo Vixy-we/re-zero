@@ -43,26 +43,28 @@ Take full control.
     *   **Cleanup:** Deduplicates items while updating.
 
 
-### 4. 🧬 Library DNA (Advanced Analytics)
-Unlock deep insights into your viewing habits with a stunning, physics-based visualization.
-*   **🫧 Organic Bubble Cloud:** Genres appear as floating, breathing bubbles. Larger bubbles indicate your most-popular categories.
-*   **📊 Status Breakdown:** Hover any bubble to see a mini-progress bar and high-level stats (Watched vs. Plan to Watch).
-*   **🛡️ Collision Physics:** Bubbles intelligently space themselves to prevent overlap, ensuring a clean and readable map.
-*   **🖱️ Interactive Discovery:** Drag and drop bubbles or watch them pulse with life in their idle state.
-
-### 5. 🧪 Suggestions (Beta)
-The new **Recommendation Engine** that builds a personalized recipe for your next watch.
+### 5. 🧪 Suggestions (Builder Mode)
+The classic **Recommendation Builder** that lets you craft a precise recipe for your next watch.
+*   **Logic:** Uses **Set Theory (Intersection/Union)** based on your explicit inputs.
 *   **Draggable Interface:**
-    *   **Like Bucket (Green):** Drag favorite anime here to find similar shows.
-    *   **Dislike Bucket (Red):** Drag anime you didn't enjoy here to avoid similar recommendations.
+    *   **Like Bucket (Green):** Drag favorite anime here to add their genres to the "Must Have" list.
+    *   **Dislike Bucket (Red):** Drag anime to the "Avoid" list.
 *   **Smart Filtering:**
     *   **Format:** Filter by TV, Movie, OVA, etc.
-    *   **Genres:** Click to "Like" (Green) or "Dislike" (Red, with Thumbs Down icon).
-*   **Visual Feedback:**
-    *   **Sidebar Ratings:** Clear yellow star icons for your user rating.
-    *   **Tooltips:** Hover over small cards in buckets to see full titles.
+    *   **Genres:** Click to "Like" (Green) or "Dislike" (Red) specific tags.
 
-### 6. 📚 The Infinite Shelf (3D Gallery)
+### 6. 🧠 Smart Engine (AI Powered)
+A dedicated page accessible via the **"Smart Engine"** button for hands-off discovery.
+*   **Logic:** Uses **Collaborative Filtering** to analyze thousands of user lists for patterns.
+*   **Visualization:**
+    *   **Neural Pulse:** A custom AI heartbeat animation indicates when the system is analyzing connection paths.
+    *   **Confidence Score:** Displays a "Match Score" based on how many sources recommend it.
+*   **Rich Details:** clicking any recommendation fetches the **full metadata** (Synopsis, Year, Rating) and opens the standard detail view, ensuring you have all the info before adding.
+*   **Similarity Scoring:**
+    *   **Frequency:** +10 points if recommended by multiple user favorites.
+    *   **Popularity:** +1 point per 10 votes.
+
+### 7. 📚 The Infinite Shelf (3D Gallery)
 *The pièce de résistance.* View your anime as a digital book collection.
 *   **🪜 Dynamic Racks:**
     *   **Master Data:** Your entire collection, sorted A-Z.

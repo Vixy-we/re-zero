@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import InfiniteShelf from "@/pages/InfiniteShelf";
 import Suggestions from "@/pages/Suggestions";
+import SmartSuggestions from "@/pages/SmartSuggestions";
 
 function Router() {
   return (
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/infinite-shelf/:slug" component={InfiniteShelf} />
       <Route path="/infinite-shelf" component={InfiniteShelf} />
       <Route path="/suggestions" component={Suggestions} />
+      <Route path="/smart-suggestions" component={SmartSuggestions} />
       <Route component={NotFound} />
     </Switch>
   );

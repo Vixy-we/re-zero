@@ -49,7 +49,7 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
   useEffect(() => {
     if (show && initialAnime) {
       setSelectedJikan(initialAnime);
-      setTags(initialAnime.genres.map(g => g.name));
+      setTags((initialAnime.genres || []).map(g => g.name));
       setStep("form");
     }
   }, [show, initialAnime]);
