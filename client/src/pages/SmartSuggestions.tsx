@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowLeft, Search, Plus, X, ThumbsUp, ThumbsDown, Sparkles, Filter, Library, Trash2, BrainCircuit } from "lucide-react";
+import { Loader2, ArrowLeft, Search, Plus, X, ThumbsUp, ThumbsDown, Sparkles, Filter, Library, Trash2, BrainCircuit, MonitorOff } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -48,6 +49,7 @@ const SidebarAnimeItem = ({ anime, onDragStart, onClick }: { anime: Anime, onDra
 }
 
 export default function SmartSuggestions() {
+    const isMobile = useIsMobile();
     const { data: libraryList } = useAnimeList();
 
     // UI State
@@ -200,6 +202,27 @@ export default function SmartSuggestions() {
             setIsGenerating(false);
         }
     };
+
+
+
+    if (isMobile) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-black text-white p-6 text-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/50">
+                        <MonitorOff className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-bold">Incompatible with Phone</h2>
+                    <p className="text-muted-foreground text-sm max-w-[250px]">
+                        The Smart Engine requires a larger screen for the best experience. Please use a PC.
+                    </p>
+                    <Link href="/">
+                        <Button variant="outline" className="mt-4">Return Home</Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans">

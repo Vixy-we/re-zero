@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowLeft, Search, Plus, X, ThumbsUp, ThumbsDown, Sparkles, Filter, Library, Trash2, FlaskConical } from "lucide-react";
+import { Loader2, ArrowLeft, Search, Plus, X, ThumbsUp, ThumbsDown, Sparkles, Filter, Library, Trash2, FlaskConical, MonitorOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAnimeList } from "@/hooks/use-anime";
@@ -81,6 +82,7 @@ const getGenreId = (name: string) => {
 };
 
 export default function Suggestions() {
+    const isMobile = useIsMobile();
     const { data: libraryList } = useAnimeList();
 
     // UI State
@@ -254,6 +256,27 @@ export default function Suggestions() {
             setIsGenerating(false);
         }
     };
+
+
+
+    if (isMobile) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-black text-white p-6 text-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/50">
+                        <MonitorOff className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-bold">Incompatible with Phone</h2>
+                    <p className="text-muted-foreground text-sm max-w-[250px]">
+                        The Suggestion Builder requires a larger screen for the drag-and-drop interface. Please use a PC.
+                    </p>
+                    <Link href="/">
+                        <Button variant="outline" className="mt-4">Return Home</Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans">

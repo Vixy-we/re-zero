@@ -1,9 +1,11 @@
 
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, Sun, Moon } from 'lucide-react';
-import { useLocation, useRoute } from 'wouter';
-import { useAnimeList, useJikanAnimeById } from "@/hooks/use-anime"; // Fixed import
+import { Loader2, Sun, Moon, MonitorOff } from 'lucide-react';
+import { useLocation, useRoute, Link } from 'wouter';
+import { useAnimeList, useJikanAnimeById } from "@/hooks/use-anime";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 
 const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -296,6 +298,7 @@ const BookView = ({ album, onClose }: { album: Album; onClose: () => void }) => 
 
 // --- Main Page Component ---
 export default function InfiniteShelf() {
+    const isMobile = useIsMobile();
     const { data: animeList = [], isLoading: isListLoading } = useAnimeList();
     const [racks, setRacks] = useState<RackData[]>([]);
     const [selected, setSelected] = useState<Album | null>(null);
@@ -445,6 +448,25 @@ export default function InfiniteShelf() {
             document.body.style.overflow = selected ? 'hidden' : 'auto';
         }
     }, [selected]);
+
+    if (isMobile) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-black text-white p-6 text-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/50">
+                        <MonitorOff className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-bold">Incompatible with Phone/Tablet</h2>
+                    <p className="text-muted-foreground text-sm max-w-[250px]">
+                        The Infinite Shelf requires a larger screen for the 3D experience. Please use a PC.
+                    </p>
+                    <Link href="/">
+                        <Button variant="outline" className="mt-4">Return Home</Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     if (!isReady || isListLoading) return <div className="min-h-screen bg-[#101010] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-stone-500" /></div>;
 
