@@ -186,6 +186,12 @@ export default function Home() {
                 <span className="hidden sm:inline">Smart Engine</span>
               </Button>
             </Link>
+            <Link href="/niche-search">
+              <Button variant="outline" className="gap-2 border-blue-500/20 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all group">
+                <Search className="w-4 h-4 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                <span className="hidden sm:inline">Niche Search</span>
+              </Button>
+            </Link>
           </div>
 
           <Link href="/infinite-shelf">

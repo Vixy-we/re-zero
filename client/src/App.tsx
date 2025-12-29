@@ -9,6 +9,8 @@ import InfiniteShelf from "@/pages/InfiniteShelf";
 import Suggestions from "@/pages/Suggestions";
 import SmartSuggestions from "@/pages/SmartSuggestions";
 
+import NicheSearch from "@/pages/NicheSearch";
+
 function Router() {
   return (
     <Switch>
@@ -17,6 +19,7 @@ function Router() {
       <Route path="/infinite-shelf" component={InfiniteShelf} />
       <Route path="/suggestions" component={Suggestions} />
       <Route path="/smart-suggestions" component={SmartSuggestions} />
+      <Route path="/niche-search" component={NicheSearch} />
       <Route component={NotFound} />
     </Switch>
   );
