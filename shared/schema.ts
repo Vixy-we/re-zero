@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,10 +7,10 @@ export const anime = pgTable("anime", {
   malId: integer("mal_id").notNull(),
   title: text("title").notNull(),
   imageUrl: text("image_url").notNull(),
-  description: text("description"),
   tags: jsonb("tags").$type<string[]>().default([]),
   category: text("category").notNull(), // 'watched' | 'plan_to_watch'
   rating: integer("rating"),
+  communityRating: doublePrecision("community_rating"),
   notes: text("notes"),
   type: text("type"),
   episodes: integer("episodes"),

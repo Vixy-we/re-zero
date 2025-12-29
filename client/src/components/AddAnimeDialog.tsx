@@ -79,7 +79,6 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
       malId: selectedJikan.mal_id,
       title: selectedJikan.title_english || selectedJikan.title,
       imageUrl: selectedJikan.images.jpg.large_image_url || selectedJikan.images.jpg.image_url,
-      description: selectedJikan.synopsis,
       tags: tags,
       category: category as "watched" | "plan_to_watch",
       rating: rating ? parseInt(rating) : null,
@@ -88,6 +87,7 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
       episodes: selectedJikan.episodes,
       duration: selectedJikan.duration,
       releaseYear: selectedJikan.year || (selectedJikan.aired?.from ? new Date(selectedJikan.aired.from).getFullYear() : null),
+      communityRating: selectedJikan.score || null,
     });
 
     setShow(false);
@@ -202,6 +202,19 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
                   <p className="text-xs text-muted-foreground mb-3 font-medium line-clamp-1">
                     {(selectedJikan?.title_english && selectedJikan.title_english !== selectedJikan.title) ? selectedJikan?.title : selectedJikan?.title_japanese}
                   </p>
+
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <div className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20 text-xs font-bold font-mono">
+                      <Star className="w-3 h-3 fill-current" />
+                      <span>{selectedJikan?.score || 'N/A'}</span>
+                    </div>
+
+                    {selectedJikan?.type && (
+                      <div className="bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20 text-[10px] font-bold uppercase tracking-wider">
+                        {selectedJikan.type}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-wrap justify-center gap-1.5">
                     {selectedJikan?.genres.slice(0, 3).map(g => (
                       <span key={g.name} className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full border border-white/5">

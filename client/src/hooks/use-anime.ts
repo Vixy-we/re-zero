@@ -9,17 +9,19 @@ const mapToAnime = (row: any): Anime => ({
   malId: row.mal_id,
   imageUrl: row.image_url,
   releaseYear: row.release_year,
+  communityRating: row.community_rating,
   createdAt: row.created_at ? new Date(row.created_at) : null,
 });
 
 // Helper to map Frontend camelCase to DB snake_case
 const mapToDb = (data: Partial<InsertAnime> & { createdAt?: Date }) => {
-  const { malId, imageUrl, releaseYear, createdAt, ...rest } = data;
+  const { malId, imageUrl, releaseYear, communityRating, createdAt, ...rest } = data;
   return {
     ...rest,
     ...(malId !== undefined && { mal_id: malId }),
     ...(imageUrl !== undefined && { image_url: imageUrl }),
     ...(releaseYear !== undefined && { release_year: releaseYear }),
+    ...(communityRating !== undefined && { community_rating: communityRating }),
     // created_at is automatic or managed elsewhere usually
   };
 };
@@ -259,8 +261,10 @@ export function useJikanAnimeById(malId: number | null) {
     queryKey: ["jikan-id", malId],
     queryFn: async () => {
       if (!malId) return null;
-      // Delay to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 333));
+      // Staggered delay to avoid rate limits (Jikan is 3 req/sec)
+      // We use a random jitter so multiple cards don't hit at once
+      const jitter = Math.random() * 2000;
+      await new Promise(resolve => setTimeout(resolve, jitter));
       const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}/full`);
       if (!res.ok) throw new Error("Failed");
       const json = await res.json();

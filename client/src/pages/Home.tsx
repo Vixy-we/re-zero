@@ -35,7 +35,7 @@ export default function Home() {
         malId: anime.mal_id,
         title: anime.title_english || anime.title,
         imageUrl: anime.images.jpg.large_image_url || anime.images.jpg.image_url,
-        rating: 0,
+        rating: null,
         category: "plan_to_watch",
         tags: anime.genres?.map(g => g.name) || [],
         notes: "",
@@ -57,7 +57,7 @@ export default function Home() {
   const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("watched");
-  const [sortBy, setSortBy] = useState<"title" | "rating" | "newest">("newest");
+  const [sortBy, setSortBy] = useState<"title" | "rating" | "newest" | "community">("newest");
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [tempFilterTags, setTempFilterTags] = useState<string[]>([]);
@@ -139,6 +139,7 @@ export default function Home() {
     return filtered.sort((a, b) => {
       if (sortBy === "title") return a.title.localeCompare(b.title);
       if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === "community") return (Number(b.communityRating) || 0) - (Number(a.communityRating) || 0);
       // Newest (by creation date, descending)
       return (new Date(b.createdAt || 0).getTime()) - (new Date(a.createdAt || 0).getTime());
     });
@@ -278,6 +279,7 @@ export default function Home() {
                   <SelectItem value="newest">Newest Added</SelectItem>
                   <SelectItem value="title">Title (A-Z)</SelectItem>
                   <SelectItem value="rating">Rating (High-Low)</SelectItem>
+                  <SelectItem value="community">Community (High-Low)</SelectItem>
                 </SelectContent>
               </Select>
               <div className="w-full sm:w-auto">

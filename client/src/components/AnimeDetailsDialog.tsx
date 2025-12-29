@@ -175,11 +175,25 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                 >
                   {jikanData?.title_english || anime.title}
                 </motion.h2>
-                {(jikanData?.title_english || jikanData?.title_japanese) && (
-                  <p className="text-lg text-gray-400 mb-4 font-medium">
-                    {(jikanData?.title_english && jikanData.title_english !== jikanData.title) ? jikanData.title : jikanData?.title_japanese}
-                  </p>
-                )}
+
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <div className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20 text-xs font-bold font-mono">
+                    <Star className="w-3 h-3 fill-current" />
+                    <span>{anime.communityRating || jikanData?.score || 'N/A'}</span>
+                  </div>
+
+                  {(anime.type || jikanData?.type) && (
+                    <div className="bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                      {anime.type || jikanData?.type}
+                    </div>
+                  )}
+
+                  {(jikanData?.title_english || jikanData?.title_japanese) && (
+                    <p className="text-sm text-gray-400 font-medium line-clamp-1">
+                      {(jikanData?.title_english && jikanData.title_english !== jikanData.title) ? jikanData.title : jikanData?.title_japanese}
+                    </p>
+                  )}
+                </div>
 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300 font-medium">
                   <span className="flex items-center bg-white/5 px-2.5 py-1 rounded-md border border-white/5 backdrop-blur-md">
@@ -238,7 +252,7 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                         <Star className="w-4 h-4 fill-white/80 text-transparent" />
                       </div>
                       <span className="text-2xl font-bold leading-none font-mono">
-                        {jikanData?.score ? jikanData.score : (jikanData ? 'N/A' : '--')}
+                        {anime.communityRating || jikanData?.score || 'N/A'}
                       </span>
                     </div>
                   </div>
@@ -312,7 +326,7 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                     <BookOpen className="w-4 h-4 text-primary" /> Synopsis
                   </h3>
                   <p className="text-gray-400 leading-relaxed text-sm">
-                    {anime.description || "No description available."}
+                    {jikanData?.synopsis || (jikanData ? "No description available." : "Loading synopsis from archives...")}
                   </p>
                 </div>
 

@@ -194,6 +194,8 @@ export default function SmartSuggestions() {
             // We can do a second pass fetching? Or just display basic info.
             // Let's stick to basic info for speed, as 20 fetches is too many.
 
+            // Artificial delay to allow neural networks to "sync" and data to stabilize
+            await new Promise(resolve => setTimeout(resolve, 500));
             setRecommendations(sortedRecs);
 
         } catch (error) {
@@ -376,6 +378,38 @@ export default function SmartSuggestions() {
                             </div>
                         )}
 
+                        {isGenerating && recommendations.length === 0 && (
+                            <div className="h-[400px] flex flex-col items-center justify-center gap-6">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full animate-pulse" />
+                                    <motion.div
+                                        animate={{
+                                            rotate: 360,
+                                            scale: [1, 1.1, 1],
+                                        }}
+                                        transition={{
+                                            rotate: { duration: 4, repeat: Infinity, ease: "linear" },
+                                            scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                                        }}
+                                        className="relative bg-black/40 border-2 border-purple-500/50 p-8 rounded-3xl backdrop-blur-xl"
+                                    >
+                                        <BrainCircuit className="w-16 h-16 text-purple-400" />
+                                    </motion.div>
+                                    <motion.div
+                                        animate={{ opacity: [0, 1, 0] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                        className="absolute -top-1 -right-1"
+                                    >
+                                        <Sparkles className="w-6 h-6 text-purple-300" />
+                                    </motion.div>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <h3 className="text-xl font-bold text-purple-200 tracking-tight animate-pulse">Analyzing Neural Patterns</h3>
+                                    <p className="text-sm text-muted-foreground/80 font-mono">SYNTHESIZING COLLABORATIVE DATASET...</p>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                             {recommendations.map((anime, idx) => (
                                 <motion.div
@@ -426,7 +460,7 @@ export default function SmartSuggestions() {
                                             createdAt: new Date(),
                                             category: "suggestion",
                                             notes: `${anime.total_votes} users recommended this based on ${anime.source_count} of your favorites.`,
-                                            description: null,
+                                            communityRating: anime.score || null,
                                             type: null,
                                             duration: null,
                                             releaseYear: null

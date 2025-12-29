@@ -36,6 +36,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
             duration: number;
             year: number;
             titles: number;
+            communityRating: number;
         };
         badItems: Anime[];
     } | null>(null);
@@ -54,7 +55,9 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
             episodes: jikanData.episodes,
             duration: jikanData.duration,
             releaseYear: jikanData.year || (jikanData.aired?.from ? new Date(jikanData.aired.from).getFullYear() : null),
-            // Preserve existing user data
+            // We now skip synopsis (description) to save DB memory
+            // Community rating is different from user rating
+            communityRating: jikanData.score || null,
             rating: anime.rating,
             notes: anime.notes,
             category: anime.category,
@@ -218,7 +221,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
         const duplicates = total - unique;
 
         let missingCount = 0;
-        const issues = { type: 0, episodes: 0, duration: 0, year: 0, titles: 0 };
+        const issues = { type: 0, episodes: 0, duration: 0, year: 0, titles: 0, communityRating: 0 };
         const badItems: Anime[] = [];
 
         uniqueItems.forEach(a => {
@@ -229,6 +232,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
             if (!a.duration) { issues.duration++; hasIssue = true; }
             if (!a.releaseYear) { issues.year++; hasIssue = true; }
             if (!a.title) { issues.titles++; hasIssue = true; }
+            if (!a.communityRating || a.communityRating === 0) { issues.communityRating++; hasIssue = true; }
 
             if (hasIssue) {
                 missingCount++;
@@ -260,7 +264,12 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
                 </Button>
             </div>
 
-            <Dialog open={isOpen} onOpenChange={(open) => { if (view === "initial" || view === "completed" || view === "report") setIsOpen(open); }}>
+            <Dialog open={isOpen} onOpenChange={(open) => {
+                if (!open && view === "refreshing") {
+                    handleStop();
+                }
+                setIsOpen(open);
+            }}>
                 <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-2xl overflow-hidden p-0 gap-0">
 
                     {view === "initial" && (
@@ -345,6 +354,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
                                             { label: "Episode Count", count: reportData.issues.episodes },
                                             { label: "Duration", count: reportData.issues.duration },
                                             { label: "Release Year", count: reportData.issues.year },
+                                            { label: "Community Rating", count: reportData.issues.communityRating },
                                         ].map((stat) => (
                                             <div key={stat.label} className="flex justify-between items-center bg-white/5 px-3 py-2 rounded">
                                                 <span className="text-gray-400">{stat.label}</span>
@@ -368,6 +378,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
                                                     <div className="flex gap-1">
                                                         {!item.type && <span className="px-1.5 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/30">TYPE</span>}
                                                         {!item.releaseYear && <span className="px-1.5 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/30">YEAR</span>}
+                                                        {(!item.communityRating || item.communityRating === 0) && <span className="px-1.5 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/30">COMMUNITY</span>}
                                                         {(!item.episodes || !item.duration) && <span className="px-1.5 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/30">DATA</span>}
                                                     </div>
                                                 </div>
@@ -399,7 +410,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
 
 
                     {view === "manual_repair" && reportData && (
-                        <div className="p-6 h-[500px] flex flex-col">
+                        <div className="p-6 h-[650px] max-h-[85vh] flex flex-col">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-lg font-bold flex items-center gap-2">
                                     <Scan className="w-5 h-5 text-blue-400" />
@@ -410,63 +421,77 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
                                 </span>
                             </div>
 
-                            <div className="flex-1 space-y-6">
-                                {(() => {
-                                    const item = reportData.badItems[manualIndex];
-                                    return (
-                                        <>
-                                            <div className="flex gap-4">
-                                                <div className="w-24 h-36 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
-                                                    <img src={item.imageUrl} className="w-full h-full object-cover" />
+                            <ScrollArea className="flex-1 pr-4">
+                                <div className="space-y-6">
+                                    {(() => {
+                                        const item = reportData.badItems[manualIndex];
+                                        return (
+                                            <>
+                                                <div className="flex gap-4">
+                                                    <div className="w-24 h-36 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
+                                                        <img src={item.imageUrl} className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-white mb-1">{item.title}</h3>
+                                                        <a href={`https://myanimelist.net/anime/${item.malId}`} target="_blank" className="text-xs text-blue-400 hover:underline">
+                                                            View on MyAnimeList ({item.malId})
+                                                        </a>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 className="font-bold text-lg text-white mb-1">{item.title}</h3>
-                                                    <a href={`https://myanimelist.net/anime/${item.malId}`} target="_blank" className="text-xs text-blue-400 hover:underline">
-                                                        View on MyAnimeList ({item.malId})
-                                                    </a>
-                                                </div>
-                                            </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>Type (TV, Movie, OVA)</Label>
-                                                    <Input
-                                                        defaultValue={item.type || ""}
-                                                        onChange={(e) => setManualForm(prev => ({ ...prev, type: e.target.value }))}
-                                                        className="bg-white/5 border-white/10"
-                                                    />
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Type (TV, Movie, OVA)</Label>
+                                                        <Input
+                                                            defaultValue={item.type || ""}
+                                                            onChange={(e) => setManualForm(prev => ({ ...prev, type: e.target.value }))}
+                                                            className="bg-white/5 border-white/10"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Episodes</Label>
+                                                        <Input
+                                                            type="number"
+                                                            defaultValue={item.episodes || ""}
+                                                            onChange={(e) => setManualForm(prev => ({ ...prev, episodes: parseInt(e.target.value) || 0 }))}
+                                                            className="bg-white/5 border-white/10"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Release Year</Label>
+                                                        <Input
+                                                            type="number"
+                                                            defaultValue={item.releaseYear || ""}
+                                                            onChange={(e) => setManualForm(prev => ({ ...prev, releaseYear: parseInt(e.target.value) || 0 }))}
+                                                            className="bg-white/5 border-white/10"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Duration (e.g. "24 min")</Label>
+                                                        <Input
+                                                            defaultValue={item.duration || ""}
+                                                            onChange={(e) => setManualForm(prev => ({ ...prev, duration: e.target.value }))}
+                                                            className="bg-white/5 border-white/10"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Community Rating (0.0 - 10.0)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            step="0.1"
+                                                            min="0"
+                                                            max="10"
+                                                            defaultValue={item.communityRating || ""}
+                                                            onChange={(e) => setManualForm(prev => ({ ...prev, communityRating: parseFloat(e.target.value) || 0 }))}
+                                                            className="bg-white/5 border-white/10"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label>Episodes</Label>
-                                                    <Input
-                                                        type="number"
-                                                        defaultValue={item.episodes || ""}
-                                                        onChange={(e) => setManualForm(prev => ({ ...prev, episodes: parseInt(e.target.value) || 0 }))}
-                                                        className="bg-white/5 border-white/10"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Release Year</Label>
-                                                    <Input
-                                                        type="number"
-                                                        defaultValue={item.releaseYear || ""}
-                                                        onChange={(e) => setManualForm(prev => ({ ...prev, releaseYear: parseInt(e.target.value) || 0 }))}
-                                                        className="bg-white/5 border-white/10"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Duration (e.g. "24 min")</Label>
-                                                    <Input
-                                                        defaultValue={item.duration || ""}
-                                                        onChange={(e) => setManualForm(prev => ({ ...prev, duration: e.target.value }))}
-                                                        className="bg-white/5 border-white/10"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </>
-                                    );
-                                })()}
-                            </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </ScrollArea>
 
                             <div className="flex justify-between mt-6 pt-4 border-t border-white/10">
                                 <Button variant="ghost" onClick={handleManualNext}>Skip</Button>
@@ -555,7 +580,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
                             </div>
                         </div>
                     )}
-                </DialogContent>
+                </DialogContent >
             </Dialog >
         </>
     );
