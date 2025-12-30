@@ -399,14 +399,19 @@ export default function NicheSearch() {
                         animate={{ opacity: 1, x: 0 }}
                     >
                         <Link href="/">
-                            <Button variant="ghost" className="mb-4 group text-muted-foreground hover:text-white pl-0">
-                                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                                Back to Library
+                            <Button variant="ghost" className="mb-4 text-muted-foreground hover:text-white -ml-4">
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Back to Base
                             </Button>
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight">
-                            Niche <span className="text-blue-400 italic">Discovery</span>
+                        <h1 className="text-4xl md:text-6xl font-display font-bold mb-2 tracking-tight">
+                            Niche <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Search</span>
                         </h1>
+                        <p className="text-zinc-400 text-lg flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-blue-500" />
+                            Curator-Style Hidden Gem Finder
+                            <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold">Beta</span>
+                        </p>
                         <p className="text-muted-foreground mt-2 max-w-xl">
                             Powered by <span className="text-white font-medium">AniList Intelligence</span>.
                             Find high-quality gems hidden beneath the mainstream surface.
