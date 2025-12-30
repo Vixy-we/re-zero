@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Sun, Moon, MonitorOff } from 'lucide-react';
+import { ShardLoader } from '@/components/ui/shard-loader';
 import { useLocation, useRoute, Link } from 'wouter';
 import { useAnimeList, useJikanAnimeById } from "@/hooks/use-anime";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -468,7 +469,10 @@ export default function InfiniteShelf() {
         );
     }
 
-    if (!isReady || isListLoading) return <div className="min-h-screen bg-[#101010] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-stone-500" /></div>;
+    if (!isReady || isListLoading) return <div className="min-h-screen bg-[#101010] flex items-center justify-center flex-col gap-4">
+        <ShardLoader variant="large" />
+        <p className="text-stone-500 font-mono text-xs uppercase tracking-widest">Initializing Visual Album</p>
+    </div>;
 
     const colors = [
         'bg-red-950', 'bg-blue-950', 'bg-emerald-950', 'bg-amber-950',

@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { AddAnimeDialog } from "@/components/AddAnimeDialog";
 import { type JikanAnime } from "@/hooks/use-anime";
 import { Plus } from "lucide-react";
+import { ShardLoader } from "@/components/ui/shard-loader";
 
 // --- Types ---
 interface AniListMedia {
@@ -567,9 +568,9 @@ export default function NicheSearch() {
                     {/* Results Area */}
                     <main>
                         {loading ? (
-                            <div className="h-[400px] flex flex-col items-center justify-center text-muted-foreground animate-in fade-in">
-                                <Loader2 className="w-10 h-10 animate-spin text-blue-400 mb-4" />
-                                <p className="font-mono tracking-widest text-xs">QUERYING ANILIST CLUSTER...</p>
+                            <div className="text-center py-24">
+                                <ShardLoader className="mb-4 mx-auto" variant="large" />
+                                <p className="text-zinc-500 animate-pulse">Searching the cosmos for hidden gems...</p>
                             </div>
                         ) : results.length === 0 ? (
                             <div className="h-[400px] flex flex-col items-center justify-center text-center p-8 bg-zinc-900/20 rounded-3xl border border-dashed border-white/10">

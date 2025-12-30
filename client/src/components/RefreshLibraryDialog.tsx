@@ -20,6 +20,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
     const [progress, setProgress] = useState(0);
     const [currentAnime, setCurrentAnime] = useState<Anime | null>(null);
     const [currentTitle, setCurrentTitle] = useState("");
+    const [eta, setEta] = useState(0);
 
     // Check Report State
     const [view, setView] = useState<"initial" | "report" | "refreshing" | "completed" | "manual_repair">("initial");
@@ -46,6 +47,12 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
     const updateAnime = useUpdateAnime();
     const deleteAnime = useDeleteAnime();
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}m ${s}s`;
+    };
 
     const processUpdate = async (anime: Anime, jikanData: any) => {
         await updateAnime.mutateAsync({
@@ -123,6 +130,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
 
         // --- REFRESH PHASE ---
         const refreshTotal = itemsToRefresh.length;
+        setEta(Math.ceil(refreshTotal * 1.5)); // Initial estimate
 
         for (let i = 0; i < refreshTotal; i++) {
             if (abortControllerRef.current.signal.aborted) break;
@@ -159,6 +167,7 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
             }
 
             setProgress(Math.round(((i + 1) / refreshTotal) * 100));
+            setEta(Math.ceil((refreshTotal - i - 1) * 1.5)); // Update remaining time
         }
 
         if (abortControllerRef.current?.signal.aborted) {
@@ -554,7 +563,12 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
                                         <span className={view === "completed" ? "" : "animate-pulse"}>
                                             {view === "completed" ? "System Standby" : "Syncing..."}
                                         </span>
-                                        <span>{progress}%</span>
+                                        <div className="flex items-center gap-2">
+                                            {view === "refreshing" && (
+                                                <span className="text-white/50">{formatTime(eta)}</span>
+                                            )}
+                                            <span>{progress}%</span>
+                                        </div>
                                     </div>
                                     <Progress value={progress} className={`h-1.5 ${view === "completed" ? "bg-green-500" : "bg-white/10"}`} />
                                     <h3 className="text-sm font-bold text-white truncate h-auto whitespace-normal mt-2">

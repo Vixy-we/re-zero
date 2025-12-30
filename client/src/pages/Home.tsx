@@ -12,7 +12,8 @@ import { useDebounce } from "@/hooks/use-debounce";
 import type { Anime } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Loader2, LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp, Sparkles, BrainCircuit, Compass } from "lucide-react";
+import { LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp, Sparkles, BrainCircuit, Compass } from "lucide-react";
+import { ShardLoader } from "@/components/ui/shard-loader";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -151,7 +152,7 @@ export default function Home() {
   if (isLoading && !animeList) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <ShardLoader variant="large" />
       </div>
     );
   }
@@ -453,7 +454,7 @@ export default function Home() {
                   className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white min-w-[200px]"
                 >
                   {isFetchingNextPage ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...</>
+                    <><ShardLoader variant="small" className="mr-2" /> Loading...</>
                   ) : (
                     "Load More"
                   )}
@@ -473,7 +474,9 @@ export default function Home() {
                   className="pl-10 h-11 bg-white/5 border-white/10 rounded-xl"
                 />
                 {isGlobalLoading && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-spin" />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 scale-75">
+                    <ShardLoader variant="small" />
+                  </div>
                 )}
               </div>
 
