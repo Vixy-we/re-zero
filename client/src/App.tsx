@@ -10,11 +10,14 @@ import Suggestions from "@/pages/Suggestions";
 import SmartSuggestions from "@/pages/SmartSuggestions";
 
 import NicheSearch from "@/pages/NicheSearch";
+import Guide from "@/pages/Guide";
+
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/guide" component={Guide} />
       <Route path="/infinite-shelf/:slug" component={InfiniteShelf} />
       <Route path="/infinite-shelf" component={InfiniteShelf} />
       <Route path="/suggestions" component={Suggestions} />

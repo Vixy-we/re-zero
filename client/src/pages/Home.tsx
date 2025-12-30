@@ -12,7 +12,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import type { Anime } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Loader2, LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp, Sparkles, BrainCircuit } from "lucide-react";
+import { Loader2, LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp, Sparkles, BrainCircuit, Compass } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -160,7 +160,7 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground pb-20">
 
       {/* Hero Header */}
-      <div className="relative h-[200px] md:h-[280px] bg-gradient-to-r from-background via-purple-900/10 to-background border-b border-white/5 overflow-hidden flex flex-col">
+      <div className="relative h-[350px] md:h-[450px] bg-gradient-to-r from-background via-purple-900/10 to-background border-b border-white/5 overflow-hidden flex flex-col">
         {/* Abstract Background pattern */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary via-background to-background" />
 
@@ -169,37 +169,49 @@ export default function Home() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="relative z-50 flex items-center justify-between pt-6 container mx-auto px-6"
+          className="relative z-50 pt-6 container mx-auto px-6 mb-4"
         >
-          <div className="flex gap-4 items-center">
-            <RefreshLibraryDialog animeList={animeList || []} />
-            <LibraryAnalytics animeList={animeList || []} />
-            <Link href="/suggestions">
-              <Button variant="outline" className="gap-2 border-white/5 bg-white/5 hover:bg-white/10 hover:border-primary/50 transition-all group">
-                <Sparkles className="w-4 h-4 text-yellow-400 group-hover:text-yellow-300 transition-colors" />
-                <span className="hidden sm:inline">Suggestions</span>
-              </Button>
-            </Link>
-            <Link href="/smart-suggestions">
-              <Button variant="outline" className="gap-2 border-purple-500/20 bg-purple-500/10 hover:bg-purple-500/20 hover:border-purple-500/50 transition-all group">
-                <BrainCircuit className="w-4 h-4 text-purple-400 group-hover:text-purple-300 transition-colors" />
-                <span className="hidden sm:inline">Smart Engine</span>
-              </Button>
-            </Link>
-            <Link href="/niche-search">
-              <Button variant="outline" className="gap-2 border-blue-500/20 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all group">
-                <Search className="w-4 h-4 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                <span className="hidden sm:inline">Niche Search</span>
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            {/* Unified Control Deck */}
+            <div className="flex items-center gap-2 p-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 shadow-xl overflow-x-auto max-w-full">
+
+              <RefreshLibraryDialog animeList={animeList || []} />
+
+              <div className="w-px h-6 bg-white/10 mx-1" /> {/* Divider */}
+
+              <LibraryAnalytics animeList={animeList || []} />
+
+              <Link href="/suggestions">
+                <Button variant="ghost" size="sm" className="rounded-full gap-2 hover:bg-yellow-500/10 hover:text-yellow-400 transition-all text-xs font-medium px-4">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
+                  Suggestions
+                </Button>
+              </Link>
+
+              <div className="w-px h-6 bg-white/10 mx-1" /> {/* Divider */}
+
+              <Link href="/smart-suggestions">
+                <Button variant="ghost" size="sm" className="rounded-full gap-2 hover:bg-purple-500/10 hover:text-purple-400 transition-all text-xs font-medium px-4">
+                  <BrainCircuit className="w-3.5 h-3.5 text-purple-500" />
+                  Smart Engine
+                </Button>
+              </Link>
+
+              <Link href="/niche-search">
+                <Button variant="ghost" size="sm" className="rounded-full gap-2 hover:bg-blue-500/10 hover:text-blue-400 transition-all text-xs font-medium px-4">
+                  <Search className="w-3.5 h-3.5 text-blue-500" />
+                  Niche Search
+                </Button>
+              </Link>
+            </div>
+
+            <Link href="/infinite-shelf">
+              <Button variant="ghost" className="text-white bg-black/40 hover:bg-black/60 hover:text-white text-xs font-mono uppercase tracking-widest flex items-center gap-2 transition-all border border-white/20 hover:border-white/40 px-4 py-2 rounded-full backdrop-blur-md shadow-xl group">
+                <span className="hidden sm:inline">Infinite SHELF</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
               </Button>
             </Link>
           </div>
-
-          <Link href="/infinite-shelf">
-            <Button variant="ghost" className="text-white bg-black/40 hover:bg-black/60 hover:text-white text-xs font-mono uppercase tracking-widest flex items-center gap-2 transition-all border border-white/20 hover:border-white/40 px-4 py-2 rounded-full backdrop-blur-md shadow-xl group">
-              <span className="hidden sm:inline">Infinite SHELF</span>
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </Button>
-          </Link>
         </motion.div>
 
         <div className="container mx-auto px-6 flex-1 flex flex-col justify-center relative z-10 pb-6">
@@ -211,9 +223,15 @@ export default function Home() {
             <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-bold mb-2 tracking-tight">
               My <span className="text-primary">Anime</span> Shelf
             </h1>
-            <p className="text-muted-foreground text-lg max-w-lg">
+            <p className="text-muted-foreground text-lg max-w-lg mb-6">
               Track your journey through worlds unknown. Organize your watched series and plan your next adventure.
             </p>
+            <Link href="/guide">
+              <Button variant="outline" className="rounded-full border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20 text-zinc-400 hover:text-white transition-all group">
+                <Compass className="w-4 h-4 mr-2 group-hover:rotate-45 transition-transform" />
+                Let's explore the website
+              </Button>
+            </Link>
           </motion.div>
         </div>
       </div>
