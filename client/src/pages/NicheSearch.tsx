@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import {
     ArrowLeft, Search, Sparkles, Filter,
     Database, BrainCircuit, Loader2, Star,
-    Users, Calendar, Info, Compass, Tag
+    Users, Calendar, Info, Compass, Tag, ChevronDown, ChevronUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,16 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDebounce } from "@/hooks/use-debounce";
+import * as Accordion from "@radix-ui/react-accordion";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { AddAnimeDialog } from "@/components/AddAnimeDialog";
+import { type JikanAnime } from "@/hooks/use-anime";
+import { Plus } from "lucide-react";
 
 // --- Types ---
 interface AniListMedia {
     id: number;
+    idMal: number | null;
     title: {
         english: string;
         romaji: string;
@@ -26,12 +32,20 @@ interface AniListMedia {
     description: string;
     averageScore: number;
     popularity: number;
+    favourites: number;
+    siteUrl: string;
     format: string;
     genres: string[];
-    tags: { name: string }[];
+    tags: { name: string; rank: number; category: string }[];
     episodes: number;
     seasonYear: number;
+    nicheScore?: number;
+    curatorReason?: string;
 }
+
+
+
+
 
 // --- AniList GraphQL Queries ---
 const ANILIST_URL = "https://graphql.anilist.co";
@@ -58,6 +72,7 @@ query ($search: String, $page: Int, $perPage: Int, $popularityLesser: Int, $scor
       sort: [SCORE_DESC, POPULARITY_DESC]
     ) {
       id
+      idMal
       title {
         english
         romaji
@@ -68,10 +83,14 @@ query ($search: String, $page: Int, $perPage: Int, $popularityLesser: Int, $scor
       description
       averageScore
       popularity
+      favourites
+      siteUrl
       format
       genres
       tags {
         name
+        rank
+        category
       }
       episodes
       seasonYear
@@ -80,19 +99,79 @@ query ($search: String, $page: Int, $perPage: Int, $popularityLesser: Int, $scor
 }
 `;
 
+const NICHE_TAGS_CATEGORIES = {
+    "Atmosphere & Pacing": [
+        "Iyashikei", "Slow Burn", "Atmospheric", "Quiet", "Surreal",
+        "Melancholy", "Dreamlike", "Liminality"
+    ],
+    "Tone & Emotion": [
+        "Bittersweet", "Tragedy", "Heartwarming", "Dark", "Wholesome",
+        "Cynical", "Philosophical", "Introspective"
+    ],
+    "Narrative Style": [
+        "Episodic", "Non-linear", "Ensemble Cast", "Character Driven",
+        "Mystery", "Thriller", "Avant Garde"
+    ],
+    "Themes": [
+        "Cyberpunk", "Steampunk", "Post-Apocalyptic", "Space", "Military",
+        "Historical", "Samurai", "Martial Arts", "Demons", "Vampires",
+        "Zombie", "Ghost", "Seinen", "Josei", "Time Manipulation",
+        "Isekai", "Mafia", "Parody"
+    ]
+};
+
 export default function NicheSearch() {
     const [search, setSearch] = useState("");
     const [popularityCeiling, setPopularityCeiling] = useState(50000); // What defines "Niche"
     const [minScore, setMinScore] = useState(70);
     const [results, setResults] = useState<AniListMedia[]>([]);
     const [loading, setLoading] = useState(false);
-    const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+    const [selectedAnime, setSelectedAnime] = useState<AniListMedia | null>(null);
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+    // Convert AniList data to Jikan structure for the Add Dialog
+    const mapAniListToJikan = (anime: AniListMedia): JikanAnime => {
+        return {
+            mal_id: anime.idMal || 0, // Fallback if no MAL ID (might block adding, handled in dialog)
+            title: anime.title.english || anime.title.romaji,
+            title_english: anime.title.english,
+            images: {
+                jpg: {
+                    image_url: anime.coverImage.extraLarge,
+                    large_image_url: anime.coverImage.extraLarge,
+                }
+            },
+            type: anime.format,
+            episodes: anime.episodes,
+            duration: "",
+            score: anime.averageScore / 10,
+            year: anime.seasonYear,
+            synopsis: anime.description,
+            genres: anime.genres.map(g => ({ name: g })),
+            aired: { from: anime.seasonYear ? `${anime.seasonYear}-01-01` : "" }
+        } as JikanAnime;
+    };
+
+    const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+
+    // Flatten categories into a single selected tags array for the query
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
 
     const nichePresets = [
         { id: "mainstream", label: "Mainstream", cap: 200000, score: 65, color: "zinc" },
         { id: "underground", label: "Underground", cap: 60000, score: 70, color: "blue" },
         { id: "cult", label: "Cult Classic", cap: 15000, score: 75, color: "purple" },
         { id: "deep", label: "Deep Niche", cap: 3000, score: 60, color: "emerald" },
+    ];
+
+    const formatOptions = [
+        { id: "TV", label: "TV Series" },
+        { id: "MOVIE", label: "Movie" },
+        { id: "OVA", label: "OVA" },
+        { id: "ONA", label: "ONA" },
+        { id: "TV_SHORT", label: "Shorts" },
+        { id: "SPECIAL", label: "Special" }
     ];
 
     const applyPreset = (preset: typeof nichePresets[0]) => {
@@ -112,35 +191,71 @@ export default function NicheSearch() {
     const debouncedPopularity = useDebounce(popularityCeiling, 500);
     const debouncedScore = useDebounce(minScore, 500);
 
-    const genresList = [
-        "Action", "Adventure", "Comedy", "Drama", "Ecchi", "Fantasy",
-        "Horror", "Mahou Shoujo", "Mecha", "Music", "Mystery",
-        "Psychological", "Romance", "Sci-Fi", "Slice of Life",
-        "Sports", "Supernatural", "Thriller"
-    ];
+    const toggleTag = (tag: string) => {
+        setSelectedTags(prev =>
+            prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+        );
+    };
 
-    const nicheThemes = [
-        "Cyberpunk", "Steampunk", "Post-Apocalyptic", "Space", "Military",
-        "Historical", "Samurai", "Martial Arts", "Demons", "Vampires",
-        "Zombie", "Ghost", "Seinen", "Josei", "Time Manipulation",
-        "Gore", "Surreal", "Avant Garde", "Noir", "Isekai", "Mafia"
-    ];
+    const toggleFormat = (format: string) => {
+        setSelectedFormats(prev =>
+            prev.includes(format) ? prev.filter(f => f !== format) : [...prev, format]
+        );
+    };
 
-    const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+    const calculateNicheScore = (anime: AniListMedia, tags: string[]) => {
+        let score = 0;
+
+        // 1. Tag Relevance (Heavy Weight)
+        // We check meaningful overlap with selected tags
+        const animeTags = anime.tags.map(t => t.name);
+        // Only count matches from the manually selected tags to avoid double counting genre overlap if unused
+        const matches = tags.length > 0 ? tags.filter(tag => animeTags.includes(tag)) : [];
+        if (matches.length > 0) score += matches.length * 15;
+
+        // 2. Cultural Saturation Penalty (The "Niche" factor)
+        const popPenalty = Math.log10(anime.popularity + 1) * 20;
+        score -= popPenalty;
+
+        // 3. Quiet Engagement Reward (Cult Factor)
+        const engagementRatio = (anime.favourites / (anime.popularity + 1)) * 100;
+        score += engagementRatio * 2;
+
+        // 4. Quality Floor Bonus
+        if (anime.averageScore > 80) score += 10;
+        if (anime.averageScore > 75) score += 5;
+
+        // 5. Format Bonus (Movies/OVAs often more niche)
+        if (anime.format === "MOVIE" || anime.format === "OVA") score += 5;
+
+        return { score, matches };
+    };
+
+    const generateCuratorReason = (anime: AniListMedia, matches: string[]) => {
+        const parts = [];
+        if (matches.length > 0) parts.push(`Matches ${matches.slice(0, 2).join(" & ")}`);
+
+        const engagement = ((anime.favourites / anime.popularity) * 100).toFixed(1);
+        if (Number(engagement) > 10) parts.push(`high cult engagement (${engagement}%)`);
+        else if (anime.popularity < 5000) parts.push("extremely obscure find");
+        else if (anime.averageScore > 80) parts.push("critically acclaimed hidden gem");
+
+        return parts.join(" • ") || "Thematically relevant discovery";
+    };
 
     const fetchNicheAnime = async () => {
         setLoading(true);
         try {
             const variables: any = {
                 page: 1,
-                perPage: 20,
+                perPage: 50, // Larger pool for client-side ranking
                 popularityLesser: debouncedPopularity,
                 scoreGreater: debouncedScore,
             };
 
             if (debouncedSearch) variables.search = debouncedSearch;
-            if (selectedGenres.length > 0) variables.genres = selectedGenres;
-            if (selectedThemes.length > 0) variables.tags = selectedThemes;
+            if (selectedTags.length > 0) variables.tags = selectedTags;
+            if (selectedFormats.length > 0) variables.format = selectedFormats;
 
             const response = await fetch(ANILIST_URL, {
                 method: "POST",
@@ -156,7 +271,19 @@ export default function NicheSearch() {
 
             const json = await response.json();
             if (json.data && json.data.Page) {
-                setResults(json.data.Page.media);
+                let media = json.data.Page.media as AniListMedia[];
+
+                // Apply Curator Scoring
+                const rankedMedia = media.map(item => {
+                    const { score, matches } = calculateNicheScore(item, selectedTags);
+                    return { ...item, nicheScore: score, curatorReason: generateCuratorReason(item, matches) };
+                });
+
+                // Sort by our custom Niche Score instead of raw API sort
+                rankedMedia.sort((a, b) => b.nicheScore - a.nicheScore);
+
+                // Take top 20 after ranking
+                setResults(rankedMedia.slice(0, 20));
             }
         } catch (error) {
             console.error("AniList Error:", error);
@@ -167,22 +294,97 @@ export default function NicheSearch() {
 
     useEffect(() => {
         fetchNicheAnime();
-    }, [debouncedSearch, debouncedPopularity, debouncedScore, selectedGenres, selectedThemes]);
-
-    const toggleGenre = (genre: string) => {
-        setSelectedGenres(prev =>
-            prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
-        );
-    };
-
-    const toggleTheme = (theme: string) => {
-        setSelectedThemes(prev =>
-            prev.includes(theme) ? prev.filter(t => t !== theme) : [...prev, theme]
-        );
-    };
+    }, [debouncedSearch, debouncedPopularity, debouncedScore, selectedTags, selectedFormats]);
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white font-sans">
+            <AddAnimeDialog
+                isOpen={isAddDialogOpen}
+                onOpenChange={setIsAddDialogOpen}
+                initialAnime={selectedAnime ? mapAniListToJikan(selectedAnime) : null}
+                trigger={<span className="hidden" />}
+            />
+
+            <Dialog open={!!selectedAnime} onOpenChange={(open) => !open && setSelectedAnime(null)}>
+                <DialogContent className="max-w-2xl bg-zinc-950 border-white/10 p-0 overflow-hidden">
+                    {selectedAnime && (
+                        <div className="grid md:grid-cols-[200px_1fr]">
+                            <div className="relative h-64 md:h-full">
+                                <img
+                                    src={selectedAnime.coverImage.extraLarge}
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent md:hidden" />
+                            </div>
+                            <div className="p-6 flex flex-col h-full max-h-[80vh] overflow-y-auto">
+                                <div className="mb-4">
+                                    <h2 className="text-2xl font-bold font-display leading-tight mb-1">
+                                        {selectedAnime.title.english || selectedAnime.title.romaji}
+                                    </h2>
+                                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground items-center">
+                                        <Badge variant="outline" className="border-white/10">{selectedAnime.format}</Badge>
+                                        <span>{selectedAnime.seasonYear}</span>
+                                        <span>•</span>
+                                        <span>{selectedAnime.episodes} eps</span>
+                                        <span>•</span>
+                                        <span className="text-blue-400 font-bold flex items-center gap-1">
+                                            <Star className="w-3 h-3 fill-current" /> {selectedAnime.averageScore}%
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <ScrollArea className="flex-1 pr-4 -mr-4 mb-6">
+                                    <div className="space-y-4">
+                                        {selectedAnime.curatorReason && (
+                                            <div className="bg-purple-500/10 border border-purple-500/20 p-3 rounded-lg">
+                                                <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-1">Curator Log</div>
+                                                <p className="text-sm text-zinc-300 font-mono italic">{selectedAnime.curatorReason}</p>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <h3 className="text-sm font-bold text-zinc-400 mb-2 uppercase tracking-wider">Synopsis</h3>
+                                            <p className="text-zinc-300 leading-relaxed text-sm whitespace-pre-wrap">
+                                                {selectedAnime.description?.replace(/<[^>]*>?/gm, '') || "No synopsis available."}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-sm font-bold text-zinc-400 mb-2 uppercase tracking-wider">Tags</h3>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {selectedAnime.tags.filter(t => t.rank > 60).slice(0, 10).map(tag => (
+                                                    <span key={tag.name} className="px-2 py-0.5 bg-white/5 rounded text-[10px] text-zinc-400 border border-white/5">
+                                                        {tag.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ScrollArea>
+
+                                <div className="mt-auto pt-4 border-t border-white/5 flex gap-3">
+                                    <Button
+                                        className="flex-1 bg-white text-black hover:bg-zinc-200"
+                                        onClick={() => {
+                                            setIsAddDialogOpen(true);
+                                            // Keep selectedAnime set so we pass it to the dialog
+                                        }}
+                                        disabled={!selectedAnime.idMal}
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        {selectedAnime.idMal ? "Add to Library" : "Not on MAL"}
+                                    </Button>
+                                    <Button variant="outline" className="border-white/10 hover:bg-white/5" asChild>
+                                        <a href={selectedAnime.siteUrl} target="_blank" rel="noopener noreferrer">
+                                            AniList Page
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
             {/* Background Decor */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2" />
@@ -229,7 +431,7 @@ export default function NicheSearch() {
 
                 <div className="grid lg:grid-cols-[300px_1fr] gap-10">
                     {/* Sidebar Filters */}
-                    <aside className="space-y-8 h-fit lg:sticky lg:top-8">
+                    <aside className="space-y-8 lg:sticky lg:top-8 lg:h-[calc(100vh-100px)] lg:overflow-y-auto pr-4 pb-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20 transition-colors">
                         <div className="p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md space-y-8">
 
                             {/* Niche Presets */}
@@ -292,46 +494,58 @@ export default function NicheSearch() {
                                 />
                             </div>
 
-                            {/* Genres */}
+                            {/* Format / Type Filter */}
                             <div className="space-y-4">
-                                <label className="text-sm font-bold uppercase tracking-widest text-primary">Core Genres</label>
+                                <label className="text-sm font-bold uppercase tracking-widest text-orange-400">Format</label>
                                 <div className="flex flex-wrap gap-2">
-                                    {genresList.map(genre => (
+                                    {formatOptions.map(format => (
                                         <Badge
-                                            key={genre}
+                                            key={format.id}
                                             variant="outline"
-                                            className={`cursor-pointer transition-all border-white/5 py-1 px-3 rounded-lg text-[10px] ${selectedGenres.includes(genre)
-                                                ? "bg-primary text-white border-primary shadow-lg shadow-primary/25"
+                                            className={`cursor-pointer transition-all border-white/5 py-1 px-3 rounded-lg text-[10px] ${selectedFormats.includes(format.id)
+                                                ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/25"
                                                 : "bg-white/5 hover:bg-white/10 text-muted-foreground"
                                                 }`}
-                                            onClick={() => toggleGenre(genre)}
+                                            onClick={() => toggleFormat(format.id)}
                                         >
-                                            {genre}
+                                            {format.label}
                                         </Badge>
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Themes & Tags */}
+                            {/* Categorized Tags */}
                             <div className="space-y-4 pt-2 border-t border-white/5">
-                                <label className="text-sm font-bold uppercase tracking-widest text-blue-400">Niche Themes</label>
-                                <ScrollArea className="h-[200px] pr-4">
-                                    <div className="flex flex-wrap gap-2">
-                                        {nicheThemes.map(theme => (
-                                            <Badge
-                                                key={theme}
-                                                variant="outline"
-                                                className={`cursor-pointer transition-all border-white/5 py-1 px-3 rounded-lg text-[10px] ${selectedThemes.includes(theme)
-                                                    ? "bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/25"
-                                                    : "bg-white/5 hover:bg-white/10 text-muted-foreground"
-                                                    }`}
-                                                onClick={() => toggleTheme(theme)}
-                                            >
-                                                {theme}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
+                                <label className="text-sm font-bold uppercase tracking-widest text-purple-400">Curated Tags</label>
+                                <Accordion.Root type="multiple" className="space-y-2">
+                                    {Object.entries(NICHE_TAGS_CATEGORIES).map(([category, tags]) => (
+                                        <Accordion.Item key={category} value={category} className="border border-white/5 rounded-xl bg-white/5 overflow-hidden">
+                                            <Accordion.Header>
+                                                <Accordion.Trigger className="flex w-full justify-between items-center p-3 text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-colors text-zinc-300">
+                                                    {category}
+                                                    <ChevronDown className="w-3 h-3 transition-transform duration-200 ease-out group-data-[state=open]:rotate-180" />
+                                                </Accordion.Trigger>
+                                            </Accordion.Header>
+                                            <Accordion.Content className="p-3 pt-0">
+                                                <div className="flex flex-wrap gap-1.5 pt-2">
+                                                    {tags.map(tag => (
+                                                        <Badge
+                                                            key={tag}
+                                                            variant="outline"
+                                                            className={`cursor-pointer transition-all border-white/5 py-1 px-2 rounded-md text-[9px] ${selectedTags.includes(tag)
+                                                                ? "bg-purple-500 text-white border-purple-500 shadow-lg shadow-purple-500/25"
+                                                                : "bg-black/20 hover:bg-white/10 text-muted-foreground"
+                                                                }`}
+                                                            onClick={() => toggleTag(tag)}
+                                                        >
+                                                            {tag}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </Accordion.Content>
+                                        </Accordion.Item>
+                                    ))}
+                                </Accordion.Root>
                             </div>
 
                         </div>
@@ -364,10 +578,11 @@ export default function NicheSearch() {
                                         <motion.div
                                             key={anime.id}
                                             layout
+                                            onClick={() => setSelectedAnime(anime)}
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: (idx % 10) * 0.05 }}
-                                            className="group relative bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-all hover:border-blue-500/30 shadow-xl"
+                                            className="group relative bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-all hover:border-blue-500/30 shadow-xl cursor-pointer"
                                         >
                                             <div className="grid grid-cols-[140px_1fr] h-full sm:h-[220px]">
                                                 {/* Cover */}
@@ -419,9 +634,16 @@ export default function NicheSearch() {
                                                         </span>
                                                     </div>
 
-                                                    <p className="text-xs text-muted-foreground line-clamp-3 mb-4 flex-1">
-                                                        {anime.description?.replace(/<[^>]*>?/gm, '') || "No transmission log available."}
-                                                    </p>
+                                                    <div className="text-xs text-muted-foreground line-clamp-3 mb-4 flex-1">
+                                                        {anime.curatorReason ? (
+                                                            <div className="mb-2 text-purple-400 font-bold tracking-wide text-[10px] uppercase border-l-2 border-purple-500 pl-2">
+                                                                {anime.curatorReason}
+                                                            </div>
+                                                        ) : null}
+                                                        <p>
+                                                            {anime.description?.replace(/<[^>]*>?/gm, '') || "No transmission log available."}
+                                                        </p>
+                                                    </div>
 
                                                     <div className="flex flex-wrap gap-1 mt-auto">
                                                         {anime.genres.slice(0, 3).map(g => (
