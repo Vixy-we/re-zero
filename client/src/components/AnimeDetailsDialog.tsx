@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpdateAnime, useDeleteAnime, useJikanAnimeById } from "@/hooks/use-anime";
 import type { Anime } from "@shared/schema";
-import { Star, Trash2, X, Edit2, Save, Calendar, Clock, BookOpen, Check, Circle } from "lucide-react";
+import { Star, Trash2, X, Edit2, Save, Calendar, Clock, BookOpen, Check, Circle, ExternalLink, Globe, PlayCircle, Search as SearchIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -85,6 +85,40 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
       id: anime.id,
       category: newCategory,
     });
+  };
+
+  const getExternalLinks = (title: string) => {
+    const encoded = encodeURIComponent(title);
+    // Kebab case for fandom: "My Hero Academia" -> "my-hero-academia"
+    // Remove special chars, replace spaces with dashes
+    const kebab = title.toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // remove special chars
+      .trim()
+      .replace(/\s+/g, '-');
+
+    return [
+      {
+        icon: Globe,
+        color: "text-blue-400",
+        bg: "bg-blue-400/10 hover:bg-blue-400/20",
+        url: `https://google.com/search?q=${encoded} anime`,
+        label: "Google Search"
+      },
+      {
+        icon: PlayCircle,
+        color: "text-purple-400",
+        bg: "bg-purple-400/10 hover:bg-purple-400/20",
+        url: `https://hianime.do/search?keyword=${encoded}`,
+        label: "HiAnime"
+      },
+      {
+        icon: BookOpen,
+        color: "text-emerald-400",
+        bg: "bg-emerald-400/10 hover:bg-emerald-400/20",
+        url: `https://${kebab}.fandom.com/`,
+        label: "Fandom Wiki"
+      }
+    ];
   };
 
   if (!anime) return null;
@@ -216,6 +250,21 @@ export function AnimeDetailsDialog({ anime, onClose }: AnimeDetailsDialogProps) 
                       </span>
                     ))}
                   </div>
+                </div>
+
+                <div className="flex gap-2 mt-1">
+                  {(anime.title || jikanData?.title) && getExternalLinks(jikanData?.title_english || anime.title).map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-2 rounded-full transition-all ${link.bg} ${link.color} border border-white/5 hover:scale-110`}
+                      title={link.label}
+                    >
+                      <link.icon className="w-4 h-4" />
+                    </a>
+                  ))}
                 </div>
               </div>
 

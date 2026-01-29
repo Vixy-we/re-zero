@@ -70,7 +70,15 @@ export default function Home() {
   const [globalType, setGlobalType] = useState<string | null>("all");
   const [globalQuery, setGlobalQuery] = useState("");
   const globalDebouncedQuery = useDebounce(globalQuery, 500);
-  const { data: globalAnime, isLoading: isGlobalLoading } = useJikanSearch(globalDebouncedQuery, globalType);
+  const {
+    data: globalData,
+    fetchNextPage: fetchGlobalNextPage,
+    hasNextPage: hasGlobalNextPage,
+    isFetchingNextPage: isGlobalFetchingNext,
+    isLoading: isGlobalLoading
+  } = useJikanSearch(globalDebouncedQuery, globalType);
+
+  const globalAnime = globalData?.pages.flatMap(page => page.data) || [];
 
   const [exploreType, setExploreType] = useState<string | null>("all");
   const [exploreFilter, setExploreFilter] = useState<string | null>("bypopularity");
@@ -185,7 +193,7 @@ export default function Home() {
               <Link href="/suggestions">
                 <Button variant="ghost" size="sm" className="rounded-full gap-2 hover:bg-yellow-500/10 hover:text-yellow-400 transition-all text-xs font-medium px-4">
                   <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
-                  Suggestions
+                  <span className="hidden sm:inline">Suggestions</span>
                 </Button>
               </Link>
 
@@ -194,14 +202,14 @@ export default function Home() {
               <Link href="/smart-suggestions">
                 <Button variant="ghost" size="sm" className="rounded-full gap-2 hover:bg-purple-500/10 hover:text-purple-400 transition-all text-xs font-medium px-4">
                   <BrainCircuit className="w-3.5 h-3.5 text-purple-500" />
-                  Smart Engine
+                  <span className="hidden sm:inline">Smart Engine</span>
                 </Button>
               </Link>
 
               <Link href="/niche-search">
                 <Button variant="ghost" size="sm" className="rounded-full gap-2 hover:bg-blue-500/10 hover:text-blue-400 transition-all text-xs font-medium px-4">
                   <Search className="w-3.5 h-3.5 text-blue-500" />
-                  Niche Search
+                  <span className="hidden sm:inline">Niche Search</span>
                 </Button>
               </Link>
             </div>
@@ -503,6 +511,23 @@ export default function Home() {
               onQuickAdd={handleQuickAdd}
               onSelect={setSelectedJikanAnime}
             />
+
+            {hasGlobalNextPage && (
+              <div className="flex justify-center pt-8 pb-12">
+                <Button
+                  onClick={() => fetchGlobalNextPage()}
+                  disabled={isGlobalFetchingNext}
+                  variant="outline"
+                  className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white min-w-[200px]"
+                >
+                  {isGlobalFetchingNext ? (
+                    <><ShardLoader variant="small" className="mr-2" /> Loading...</>
+                  ) : (
+                    "Load More"
+                  )}
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs >
 

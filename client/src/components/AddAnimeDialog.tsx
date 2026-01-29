@@ -43,7 +43,8 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
 
-  const { data: results, isLoading } = useJikanSearch(debouncedQuery);
+  const { data: searchData, isLoading } = useJikanSearch(debouncedQuery);
+  const results = searchData?.pages.flatMap(page => page.data) || [];
   const createMutation = useCreateAnime();
 
   useEffect(() => {
@@ -141,13 +142,13 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
                     <Loader2 className="h-10 w-10 animate-spin mb-4 text-primary" />
                     <p>Searching the archives...</p>
                   </div>
-                ) : query.length >= 3 && results?.length === 0 ? (
+                ) : query.length >= 3 && results.length === 0 ? (
                   <div className="text-center py-20 text-muted-foreground">
                     No anime found matching "{query}"
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {results?.map((anime) => (
+                    {results.map((anime) => (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -202,6 +203,30 @@ export function AddAnimeDialog({ initialAnime, isOpen, onOpenChange, trigger }: 
                   <p className="text-xs text-muted-foreground mb-3 font-medium line-clamp-1">
                     {(selectedJikan?.title_english && selectedJikan.title_english !== selectedJikan.title) ? selectedJikan?.title : selectedJikan?.title_japanese}
                   </p>
+
+                  <div className="flex justify-center gap-2 mb-4">
+                    {(() => {
+                      const title = selectedJikan?.title_english || selectedJikan?.title || "";
+                      const encoded = encodeURIComponent(title);
+                      const kebab = title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+
+                      return [
+                        { icon: Search, url: `https://google.com/search?q=${encoded} anime`, color: "text-blue-400", bg: "bg-blue-500/10" },
+                        { icon: Plus, url: `https://hianime.do/search?keyword=${encoded}`, color: "text-purple-400", bg: "bg-purple-500/10" }, // Using Plus as placeholder if PlayCircle not imported, but wait, I can import it.
+                        { icon: BookOpen, url: `https://${kebab}.fandom.com/`, color: "text-emerald-400", bg: "bg-emerald-500/10" }
+                      ].map((link, i) => (
+                        <a
+                          key={i}
+                          href={link.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`p-2 rounded-full ${link.bg} ${link.color} hover:scale-110 transition-transform border border-white/5`}
+                        >
+                          <link.icon className="w-4 h-4" />
+                        </a>
+                      ));
+                    })()}
+                  </div>
 
                   <div className="flex items-center justify-center gap-3 mb-4">
                     <div className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20 text-xs font-bold font-mono">

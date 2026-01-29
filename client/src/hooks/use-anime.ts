@@ -148,19 +148,30 @@ export function useDeleteAnime() {
 // ============================================
 
 export function useJikanSearch(query: string, type?: string | null) {
-  return useQuery({
-    queryKey: ["jikan", query, type],
-    queryFn: async () => {
-      if (!query || query.length < 3) return [];
-      let url = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=12`;
+  return useInfiniteQuery({
+    queryKey: ["jikan-global", query, type],
+    queryFn: async ({ pageParam = 1 }) => {
+      if (!query || query.length < 3) return { data: [], nextPage: undefined };
+
+      let url = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&page=${pageParam}&limit=24`;
       if (type && type !== "all") {
         url += `&type=${type}`;
       }
+
+      // Delay to avoid hitting rate limit too fast
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to search Jikan");
       const data = await res.json();
-      return data.data as JikanAnime[];
+
+      return {
+        data: data.data as JikanAnime[],
+        nextPage: data.pagination?.has_next_page ? pageParam + 1 : undefined,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 1,
     enabled: query.length >= 3,
     staleTime: 1000 * 60 * 60, // 1 hour
   });
