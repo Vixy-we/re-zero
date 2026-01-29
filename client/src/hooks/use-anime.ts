@@ -147,6 +147,55 @@ export function useDeleteAnime() {
 // EXTERNAL API HOOKS (Jikan)
 // ============================================
 
+// ============================================
+// RATE LIMITING QUEUE
+// ============================================
+
+class RequestQueue {
+  private queue: Array<() => Promise<void>> = [];
+  private isProcessing = false;
+  private lastRequestTime = 0;
+  private readonly minDelay = 340; // ~3 requests per second limit
+
+  async add<T>(requestFn: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await requestFn();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      this.processQueue();
+    });
+  }
+
+  private async processQueue() {
+    if (this.isProcessing || this.queue.length === 0) return;
+    this.isProcessing = true;
+
+    while (this.queue.length > 0) {
+      const now = Date.now();
+      const timeSinceLast = now - this.lastRequestTime;
+
+      if (timeSinceLast < this.minDelay) {
+        await new Promise(r => setTimeout(r, this.minDelay - timeSinceLast));
+      }
+
+      const task = this.queue.shift();
+      if (task) {
+        this.lastRequestTime = Date.now();
+        await task();
+      }
+    }
+
+    this.isProcessing = false;
+  }
+}
+
+const jikanQueue = new RequestQueue();
+
 export function useJikanSearch(query: string, type?: string | null) {
   return useInfiniteQuery({
     queryKey: ["jikan-global", query, type],
@@ -158,22 +207,23 @@ export function useJikanSearch(query: string, type?: string | null) {
         url += `&type=${type}`;
       }
 
-      // Delay to avoid hitting rate limit too fast
-      await new Promise(resolve => setTimeout(resolve, 500));
+      return jikanQueue.add(async () => {
+        const res = await fetch(url);
+        if (res.status === 429) throw new Error("Rate Limited");
+        if (!res.ok) throw new Error("Failed to search Jikan");
+        const data = await res.json();
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to search Jikan");
-      const data = await res.json();
-
-      return {
-        data: data.data as JikanAnime[],
-        nextPage: data.pagination?.has_next_page ? pageParam + 1 : undefined,
-      };
+        return {
+          data: data.data as JikanAnime[],
+          nextPage: data.pagination?.has_next_page ? pageParam + 1 : undefined,
+        };
+      });
     },
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 1,
     enabled: query.length >= 3,
     staleTime: 1000 * 60 * 60, // 1 hour
+    retry: 2
   });
 }
 
@@ -241,25 +291,24 @@ export function useJikanExplore(type?: string | null, filter?: string | null, in
         if (ids.length > 0) url += `&genres_exclude=${ids.join(',')}`;
       }
 
-      // Delay to avoid hitting rate limit too fast if scrolling aggressively
-      await new Promise(resolve => setTimeout(resolve, 500));
+      return jikanQueue.add(async () => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to fetch explore data");
+        const data = await res.json();
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch explore data");
-      const data = await res.json();
+        let items = data.data as JikanAnime[];
 
-      let items = data.data as JikanAnime[];
+        // Client-side filter for "just_released" future dates
+        if (filter === "just_released") {
+          const now = new Date();
+          items = items.filter(a => a.aired?.from && new Date(a.aired.from) <= now);
+        }
 
-      // Client-side filter for "just_released" future dates
-      if (filter === "just_released") {
-        const now = new Date();
-        items = items.filter(a => a.aired?.from && new Date(a.aired.from) <= now);
-      }
-
-      return {
-        data: items,
-        nextPage: data.pagination?.has_next_page ? pageParam + 1 : undefined,
-      };
+        return {
+          data: items,
+          nextPage: data.pagination?.has_next_page ? pageParam + 1 : undefined,
+        };
+      });
     },
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 1,
@@ -272,17 +321,23 @@ export function useJikanAnimeById(malId: number | null) {
     queryKey: ["jikan-id", malId],
     queryFn: async () => {
       if (!malId) return null;
-      // Staggered delay to avoid rate limits (Jikan is 3 req/sec)
-      // We use a random jitter so multiple cards don't hit at once
-      const jitter = Math.random() * 2000;
-      await new Promise(resolve => setTimeout(resolve, jitter));
-      const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}/full`);
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
-      return json.data as JikanAnime;
+
+      return jikanQueue.add(async () => {
+        const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}/full`);
+        if (res.status === 429) {
+          throw new Error("Rate Limited");
+        }
+        if (!res.ok) throw new Error("Failed");
+        const json = await res.json();
+        return json.data as JikanAnime;
+      });
     },
     enabled: !!malId,
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
+    retry: (failureCount, error) => {
+      if (error.message === "Rate Limited" && failureCount < 3) return true;
+      return false;
+    }
   });
 }
 
@@ -313,10 +368,12 @@ export function useJikanSuggestions(genresInclude: number[], genresExclude: numb
       // To keep it "fresh", we could pick a random page if filters are broad
       // For now, page 1 is safest for relevancy.
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch suggestions");
-      const data = await res.json();
-      return data.data as JikanAnime[];
+      return jikanQueue.add(async () => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to fetch suggestions");
+        const data = await res.json();
+        return data.data as JikanAnime[];
+      });
     },
     enabled: false, // Trigger manual execution
   });

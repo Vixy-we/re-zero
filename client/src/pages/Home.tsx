@@ -19,6 +19,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export default function Home() {
   const { data: animeList, isLoading } = useAnimeList();
@@ -157,16 +158,13 @@ export default function Home() {
   // Extract all unique tags for filtering
   const allTags = Array.from(new Set(animeList?.flatMap(a => a.tags || []) || [])).sort();
 
-  if (isLoading && !animeList) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <ShardLoader variant="large" />
-      </div>
-    );
-  }
+
+
+
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
+      <LoadingScreen />
 
       {/* Hero Header */}
       <div className="relative h-[350px] md:h-[450px] bg-gradient-to-r from-background via-purple-900/10 to-background border-b border-white/5 overflow-hidden flex flex-col">
