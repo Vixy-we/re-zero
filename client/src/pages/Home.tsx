@@ -12,7 +12,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import type { Anime } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp, Sparkles, BrainCircuit, Compass } from "lucide-react";
+import { LayoutGrid, List, Database, Search, FilterX, Filter, Check, ChevronDown, ChevronUp, Sparkles, BrainCircuit, Compass, Server } from "lucide-react";
 import { ShardLoader } from "@/components/ui/shard-loader";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -67,6 +67,17 @@ export default function Home() {
   const [tempExcludeInput, setTempExcludeInput] = useState("");
   const [isExcludeOpen, setIsExcludeOpen] = useState(false);
 
+  // API Source Toggle
+  const [apiSource, setApiSource] = useState<"jikan" | "anilist">(() => {
+    return (localStorage.getItem("anime_api_source") as "jikan" | "anilist") || "jikan";
+  });
+
+  const toggleApiSource = () => {
+    const newSource = apiSource === "jikan" ? "anilist" : "jikan";
+    setApiSource(newSource);
+    localStorage.setItem("anime_api_source", newSource);
+  };
+
   // Global DB & Explore States
   const [globalType, setGlobalType] = useState<string | null>("all");
   const [globalQuery, setGlobalQuery] = useState("");
@@ -77,7 +88,7 @@ export default function Home() {
     hasNextPage: hasGlobalNextPage,
     isFetchingNextPage: isGlobalFetchingNext,
     isLoading: isGlobalLoading
-  } = useJikanSearch(globalDebouncedQuery, globalType);
+  } = useJikanSearch(globalDebouncedQuery, globalType, apiSource);
 
   const globalAnime = globalData?.pages.flatMap(page => page.data) || [];
 
@@ -95,7 +106,7 @@ export default function Home() {
     hasNextPage,
     isFetchingNextPage,
     isLoading: isExploreLoading
-  } = useJikanExplore(exploreType, exploreFilter, debouncedInclude, debouncedExclude);
+  } = useJikanExplore(exploreType, exploreFilter, debouncedInclude, debouncedExclude, apiSource);
 
   // Create a Set of existing MAL IDs to check status
   const libraryMalIds = new Set(animeList?.map(a => a.malId).filter(Boolean));
@@ -210,6 +221,19 @@ export default function Home() {
                   <span className="hidden sm:inline">Niche Search</span>
                 </Button>
               </Link>
+
+              <div className="w-px h-6 bg-white/10 mx-1" /> {/* Divider */}
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={toggleApiSource}
+                className={`rounded-full gap-2 transition-all text-xs font-medium px-4 ${apiSource === 'jikan' ? 'text-blue-400 hover:bg-blue-500/20' : 'text-emerald-400 hover:bg-emerald-500/20'}`}
+                title="Toggle Backend API (Switch to AniList if Jikan is down)"
+              >
+                <Server className={`w-3.5 h-3.5 ${apiSource === 'jikan' ? 'text-blue-500' : 'text-emerald-500'}`} />
+                <span className="hidden sm:inline">API: {apiSource === 'jikan' ? 'Jikan' : 'AniList'}</span>
+              </Button>
             </div>
 
             <Link href="/infinite-shelf">

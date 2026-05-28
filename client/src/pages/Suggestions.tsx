@@ -11,6 +11,7 @@ import { AnimeCard } from "@/components/AnimeCard";
 import type { Anime } from "@shared/schema";
 import { AddAnimeDialog } from "@/components/AddAnimeDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { fetchAniList, mapAniListToJikan, ApiSource } from "@/hooks/use-anime";
 
 // Commonly used genres with their MAL IDs (Jikan API) - Expanded List
 const GENRES = [
@@ -152,6 +153,17 @@ export default function Suggestions() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [selectedJikanAnime, setSelectedJikanAnime] = useState<any | null>(null);
 
+    // API Source Toggle
+    const [apiSource, setApiSource] = useState<ApiSource>(() => {
+        return (localStorage.getItem("anime_api_source") as ApiSource) || "jikan";
+    });
+
+    const toggleApiSource = () => {
+        const newSource = apiSource === "jikan" ? "anilist" : "jikan";
+        setApiSource(newSource);
+        localStorage.setItem("anime_api_source", newSource);
+    };
+
     // Filter library based on search - WATCHED ONLY
     const filteredLibrary = libraryList?.filter(a =>
         a.category === 'watched' &&
@@ -281,28 +293,53 @@ export default function Suggestions() {
                     });
                 });
 
-                const genreQuery = Array.from(explicitLiked).join(',');
-                const excludeQuery = Array.from(explicitDisliked).join(',');
+                if (apiSource === "anilist") {
+                    const variables: any = { page: 1, perPage: 24, sort: ["POPULARITY_DESC"] };
+                    
+                    const mapGenresToNames = (ids: Set<number>) => Array.from(ids).map(id => GENRES.find(g => g.id === id)?.name).filter(Boolean);
+                    
+                    const includeNames = mapGenresToNames(explicitLiked);
+                    const excludeNames = mapGenresToNames(explicitDisliked);
+                    
+                    if (includeNames.length > 0) variables.genres = includeNames;
+                    if (excludeNames.length > 0) variables.genresExclude = excludeNames;
+                    if (selectedType && selectedType !== "all") variables.format = selectedType.toUpperCase() === "TV" ? "TV" : selectedType.toUpperCase();
 
-                let url = `https://api.jikan.moe/v4/anime?order_by=popularity&sfw=true&min_score=7`;
-
-                if (explicitLiked.size > 0) url += `&genres=${genreQuery}`;
-                if (explicitDisliked.size > 0) url += `&genres_exclude=${excludeQuery}`;
-                if (selectedType) url += `&type=${selectedType}`;
-
-                // Fetch with retry on 429
-                let data: any = null;
-                for (let attempt = 0; attempt < 3; attempt++) {
-                    const response = await fetch(url);
-                    if (response.status === 429) {
-                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
-                        continue;
+                    const query = `
+                    query ($page: Int, $perPage: Int, $sort: [MediaSort], $format: MediaFormat, $genres: [String], $genresExclude: [String]) {
+                      Page(page: $page, perPage: $perPage) {
+                        media(type: ANIME, sort: $sort, format: $format, genre_in: $genres, genre_not_in: $genresExclude) {
+                          id idMal title { romaji english } coverImage { large extraLarge } description genres seasonYear averageScore format episodes duration startDate { year month day }
+                        }
+                      }
                     }
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    data = await response.json();
-                    break;
+                    `;
+                    const response = await fetchAniList(query, variables);
+                    newRecs = (response.data?.Page?.media || []).map(mapAniListToJikan);
+                } else {
+                    const genreQuery = Array.from(explicitLiked).join(',');
+                    const excludeQuery = Array.from(explicitDisliked).join(',');
+
+                    let url = `https://api.jikan.moe/v4/anime?order_by=popularity&sfw=true&min_score=7`;
+
+                    if (explicitLiked.size > 0) url += `&genres=${genreQuery}`;
+                    if (explicitDisliked.size > 0) url += `&genres_exclude=${excludeQuery}`;
+                    if (selectedType) url += `&type=${selectedType}`;
+
+                    // Fetch with retry on 429
+                    let data: any = null;
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        const response = await fetch(url);
+                        if (response.status === 429) {
+                            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                            continue;
+                        }
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        data = await response.json();
+                        break;
+                    }
+                    newRecs = data?.data || [];
                 }
-                newRecs = data?.data || [];
             }
 
             // Common Deduplication (Filter out Library items)
@@ -358,7 +395,15 @@ export default function Suggestions() {
                         </Button>
                     </Link>
                     <div className="flex items-center gap-2">
-                        <span className="font-bold tracking-tight">Suggestions</span>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={toggleApiSource}
+                            className={`h-7 px-2 text-[10px] rounded flex gap-1 items-center border ${apiSource === 'jikan' ? 'text-blue-400 border-blue-500/20 bg-blue-500/10' : 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'}`}
+                            title="Toggle Backend API"
+                        >
+                            API: {apiSource === 'jikan' ? 'Jikan' : 'AniList'}
+                        </Button>
                         <span className="text-[10px] bg-primary/20 text-primary border border-primary/50 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <FlaskConical className="w-3 h-3" /> Beta
                         </span>

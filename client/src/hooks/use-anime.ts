@@ -249,15 +249,97 @@ export const GENRE_MAP: Record<string, number> = {
 };
 
 // ============================================
+// ANILIST GRAPHQL WRAPPER (Alternative to Jikan/Kitsu)
+// We use AniList instead of Kitsu because AniList provides `idMal` natively,
+// ensuring compatibility with Smart Engine and Library tracking.
+// ============================================
+
+export async function fetchAniList(query: string, variables: any) {
+  const res = await fetch("https://graphql.anilist.co", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    body: JSON.stringify({ query, variables })
+  });
+
+  if (!res.ok) {
+    if (res.status === 429) {
+      const wait = res.headers.get('Retry-After') ? parseInt(res.headers.get('Retry-After')!) * 1000 : 2000;
+      await new Promise(r => setTimeout(r, wait));
+      return fetchAniList(query, variables); // Retry once
+    }
+    throw new Error(`AniList HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export function mapAniListToJikan(media: any): JikanAnime {
+  return {
+    mal_id: media.idMal || media.id, // Fallback to anilist ID if MAL id missing
+    title: media.title.english || media.title.romaji || "Unknown Title",
+    title_english: media.title.english,
+    title_japanese: media.title.romaji,
+    images: { jpg: { large_image_url: media.coverImage.extraLarge || media.coverImage.large, image_url: media.coverImage.large } },
+    synopsis: media.description?.replace(/<[^>]*>?/gm, '') || "",
+    genres: (media.genres || []).map((g: string) => ({ name: g })),
+    year: media.seasonYear || media.startDate?.year || 0,
+    score: media.averageScore ? media.averageScore / 10 : 0, // AniList is 0-100, Jikan is 0-10
+    type: media.format || "TV",
+    episodes: media.episodes || 0,
+    duration: `${media.duration || 24} min per ep`,
+    aired: { from: media.startDate?.year ? `${media.startDate.year}-${media.startDate.month || 1}-${media.startDate.day || 1}` : "" }
+  };
+}
+
+const ANILIST_SEARCH_QUERY = `
+query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $format: MediaFormat, $status: MediaStatus, $genres: [String], $genresExclude: [String]) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo { hasNextPage }
+    media(search: $search, type: ANIME, sort: $sort, format: $format, status: $status, genre_in: $genres, genre_not_in: $genresExclude) {
+      id
+      idMal
+      title { romaji english }
+      coverImage { large extraLarge }
+      description
+      genres
+      seasonYear
+      averageScore
+      format
+      episodes
+      duration
+      startDate { year month day }
+    }
+  }
+}
+`;
+
+// ============================================
 // HOOKS
 // ============================================
 
-export function useJikanSearch(query: string, type?: string | null) {
+export type ApiSource = "jikan" | "anilist";
+
+export function useJikanSearch(query: string, type?: string | null, source: ApiSource = "jikan") {
   return useInfiniteQuery({
-    queryKey: ["jikan-global", query, type],
+    queryKey: ["search", source, query, type],
     queryFn: async ({ pageParam = 1 }) => {
       if (!query || query.length < 3) return { data: [], nextPage: undefined };
 
+      if (source === "anilist") {
+        const variables: any = { search: query, page: pageParam, perPage: 24, sort: ["POPULARITY_DESC"] };
+        if (type && type !== "all") {
+           variables.format = type.toUpperCase() === "TV" ? "TV" : type.toUpperCase();
+        }
+        const response = await fetchAniList(ANILIST_SEARCH_QUERY, variables);
+        return {
+          data: (response.data?.Page?.media || []).map(mapAniListToJikan),
+          nextPage: response.data?.Page?.pageInfo?.hasNextPage ? pageParam + 1 : undefined,
+        };
+      }
+
+      // Jikan fallback
       let url = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&page=${pageParam}&limit=24`;
       if (type && type !== "all") {
         url += `&type=${type}`;
@@ -280,15 +362,40 @@ export function useJikanSearch(query: string, type?: string | null) {
   });
 }
 
-export function useJikanExplore(type?: string | null, filter?: string | null, includeTags?: string, excludeTags?: string) {
+export function useJikanExplore(type?: string | null, filter?: string | null, includeTags?: string, excludeTags?: string, source: ApiSource = "jikan") {
   return useInfiniteQuery({
-    queryKey: ["jikan-explore", type, filter, includeTags, excludeTags],
+    queryKey: ["explore", source, type, filter, includeTags, excludeTags],
     queryFn: async ({ pageParam = 1 }) => {
+      if (source === "anilist") {
+        const variables: any = { page: pageParam, perPage: 24 };
+        
+        let sort = "POPULARITY_DESC";
+        if (filter === "top_rated") sort = "SCORE_DESC";
+        else if (filter === "just_released") sort = "START_DATE_DESC";
+        variables.sort = [sort];
+
+        if (filter === "airing" || filter === "just_released") variables.status = "RELEASING";
+        else if (filter === "upcoming") variables.status = "NOT_YET_RELEASED";
+
+        if (type && type !== "all") variables.format = type.toUpperCase() === "TV" ? "TV" : type.toUpperCase();
+
+        const parseTags = (input: string) => input.split(',').map(t => t.trim()).filter(Boolean);
+        if (includeTags) variables.genres = parseTags(includeTags);
+        if (excludeTags) variables.genresExclude = parseTags(excludeTags);
+
+        const response = await fetchAniList(ANILIST_SEARCH_QUERY, variables);
+        return {
+          data: (response.data?.Page?.media || []).map(mapAniListToJikan),
+          nextPage: response.data?.Page?.pageInfo?.hasNextPage ? pageParam + 1 : undefined,
+        };
+      }
+
+      // Jikan fallback
       let url = `https://api.jikan.moe/v4/anime?page=${pageParam}&limit=24`;
 
       // Defaults
       let orderBy = "members"; // popularity
-      let sort = "desc";
+      let jikanSort = "desc";
       let status = "";
 
       // 1. Map simple filters to API params
@@ -307,7 +414,7 @@ export function useJikanExplore(type?: string | null, filter?: string | null, in
         orderBy = "members";
       }
 
-      url += `&order_by=${orderBy}&sort=${sort}`;
+      url += `&order_by=${orderBy}&sort=${jikanSort}`;
       if (status) url += `&status=${status}`;
 
       // 2. Type Filter
