@@ -143,22 +143,21 @@ export function RefreshLibraryDialog({ animeList }: RefreshLibraryDialogProps) {
                 // Respect rate limit: ~2 requests per second
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                const res = await fetch(`https://api.jikan.moe/v4/anime/${anime.malId}/full`);
-                if (!res.ok) {
+                // Fetch with retry on 429
+                let jikanData: any = null;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    const res = await fetch(`https://api.jikan.moe/v4/anime/${anime.malId}/full`);
                     if (res.status === 429) {
-                        // Hit rate limit, wait longer and retry once
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        const retry = await fetch(`https://api.jikan.moe/v4/anime/${anime.malId}/full`);
-                        if (!retry.ok) throw new Error("Failed after retry");
-                        const data = await retry.json();
-                        await processUpdate(anime, data.data);
-                    } else {
-                        throw new Error(`API Error ${res.status}`);
+                        await new Promise(resolve => setTimeout(resolve, 1500 * Math.pow(2, attempt)));
+                        continue;
                     }
-                } else {
-                    const data = await res.json();
-                    await processUpdate(anime, data.data);
+                    if (!res.ok) throw new Error(`API Error ${res.status}`);
+                    const json = await res.json();
+                    jikanData = json.data;
+                    break;
                 }
+                if (!jikanData) throw new Error("Max retries exceeded");
+                await processUpdate(anime, jikanData);
                 successCount++;
             } catch (e) {
                 console.error(`Failed to refresh ${anime.title}`, e);

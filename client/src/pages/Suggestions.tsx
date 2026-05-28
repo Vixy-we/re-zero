@@ -290,9 +290,19 @@ export default function Suggestions() {
                 if (explicitDisliked.size > 0) url += `&genres_exclude=${excludeQuery}`;
                 if (selectedType) url += `&type=${selectedType}`;
 
-                const response = await fetch(url);
-                const data = await response.json();
-                newRecs = data.data || [];
+                // Fetch with retry on 429
+                let data: any = null;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    const response = await fetch(url);
+                    if (response.status === 429) {
+                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                        continue;
+                    }
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    data = await response.json();
+                    break;
+                }
+                newRecs = data?.data || [];
             }
 
             // Common Deduplication (Filter out Library items)

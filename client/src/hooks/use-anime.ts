@@ -148,6 +148,40 @@ export function useDeleteAnime() {
 // ============================================
 
 // ============================================
+// ROBUST JIKAN FETCH WITH RETRY
+// ============================================
+
+async function jikanFetch(url: string, retries = 3): Promise<any> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const res = await fetch(url);
+
+      if (res.status === 429) {
+        // Rate limited — wait with exponential backoff then retry
+        const wait = Math.min(1000 * Math.pow(2, attempt), 8000);
+        console.warn(`[Jikan] 429 rate limited, retrying in ${wait}ms (attempt ${attempt + 1}/${retries})`);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+
+      if (!res.ok) {
+        throw new Error(`Jikan HTTP ${res.status}`);
+      }
+
+      return await res.json();
+    } catch (error: any) {
+      if (error.message?.includes("429") || attempt < retries - 1) {
+        const wait = Math.min(1000 * Math.pow(2, attempt), 8000);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Jikan: max retries exceeded");
+}
+
+// ============================================
 // RATE LIMITING QUEUE
 // ============================================
 
@@ -155,7 +189,7 @@ class RequestQueue {
   private queue: Array<() => Promise<void>> = [];
   private isProcessing = false;
   private lastRequestTime = 0;
-  private readonly minDelay = 340; // ~3 requests per second limit
+  private readonly minDelay = 400; // ~2.5 requests per second (safe for Jikan)
 
   async add<T>(requestFn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -196,38 +230,11 @@ class RequestQueue {
 
 const jikanQueue = new RequestQueue();
 
-export function useJikanSearch(query: string, type?: string | null) {
-  return useInfiniteQuery({
-    queryKey: ["jikan-global", query, type],
-    queryFn: async ({ pageParam = 1 }) => {
-      if (!query || query.length < 3) return { data: [], nextPage: undefined };
+// ============================================
+// GENRE MAP
+// ============================================
 
-      let url = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&page=${pageParam}&limit=24`;
-      if (type && type !== "all") {
-        url += `&type=${type}`;
-      }
-
-      return jikanQueue.add(async () => {
-        const res = await fetch(url);
-        if (res.status === 429) throw new Error("Rate Limited");
-        if (!res.ok) throw new Error("Failed to search Jikan");
-        const data = await res.json();
-
-        return {
-          data: data.data as JikanAnime[],
-          nextPage: data.pagination?.has_next_page ? pageParam + 1 : undefined,
-        };
-      });
-    },
-    getNextPageParam: (lastPage) => lastPage.nextPage,
-    initialPageParam: 1,
-    enabled: query.length >= 3,
-    staleTime: 1000 * 60 * 60, // 1 hour
-    retry: 2
-  });
-}
-
-const GENRE_MAP: Record<string, number> = {
+export const GENRE_MAP: Record<string, number> = {
   "action": 1, "adventure": 2, "rac": 3, "cars": 3, "comedy": 4, "avante garde": 5,
   "demons": 6, "mystery": 7, "drama": 8, "ecchi": 9, "fantasy": 10, "game": 11,
   "hentai": 12, "historical": 13, "horror": 14, "kids": 15, "martial arts": 17,
@@ -240,6 +247,38 @@ const GENRE_MAP: Record<string, number> = {
   "award winning": 46, "gourmet": 47, "work life": 48, "erotica": 49,
   "isekai": 62, "cyberpunk": 50, "magical girl": 81
 };
+
+// ============================================
+// HOOKS
+// ============================================
+
+export function useJikanSearch(query: string, type?: string | null) {
+  return useInfiniteQuery({
+    queryKey: ["jikan-global", query, type],
+    queryFn: async ({ pageParam = 1 }) => {
+      if (!query || query.length < 3) return { data: [], nextPage: undefined };
+
+      let url = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&page=${pageParam}&limit=24`;
+      if (type && type !== "all") {
+        url += `&type=${type}`;
+      }
+
+      return jikanQueue.add(async () => {
+        const json = await jikanFetch(url);
+        return {
+          data: (json.data || []) as JikanAnime[],
+          nextPage: json.pagination?.has_next_page ? pageParam + 1 : undefined,
+        };
+      });
+    },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 1,
+    enabled: query.length >= 3,
+    staleTime: 1000 * 60 * 60, // 1 hour
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000),
+  });
+}
 
 export function useJikanExplore(type?: string | null, filter?: string | null, includeTags?: string, excludeTags?: string) {
   return useInfiniteQuery({
@@ -255,10 +294,9 @@ export function useJikanExplore(type?: string | null, filter?: string | null, in
       // 1. Map simple filters to API params
       if (filter === "top_rated") {
         orderBy = "score";
-        // status = "complete"; 
       } else if (filter === "airing") {
         status = "airing";
-        orderBy = "members"; // Popular airing
+        orderBy = "members";
       } else if (filter === "upcoming") {
         status = "upcoming";
         orderBy = "members";
@@ -266,7 +304,6 @@ export function useJikanExplore(type?: string | null, filter?: string | null, in
         status = "airing";
         orderBy = "start_date";
       } else {
-        // "bypopularity" or default
         orderBy = "members";
       }
 
@@ -292,11 +329,9 @@ export function useJikanExplore(type?: string | null, filter?: string | null, in
       }
 
       return jikanQueue.add(async () => {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch explore data");
-        const data = await res.json();
+        const json = await jikanFetch(url);
 
-        let items = data.data as JikanAnime[];
+        let items = (json.data || []) as JikanAnime[];
 
         // Client-side filter for "just_released" future dates
         if (filter === "just_released") {
@@ -306,13 +341,15 @@ export function useJikanExplore(type?: string | null, filter?: string | null, in
 
         return {
           data: items,
-          nextPage: data.pagination?.has_next_page ? pageParam + 1 : undefined,
+          nextPage: json.pagination?.has_next_page ? pageParam + 1 : undefined,
         };
       });
     },
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 1,
     staleTime: 1000 * 60 * 60,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000),
   });
 }
 
@@ -323,21 +360,17 @@ export function useJikanAnimeById(malId: number | null) {
       if (!malId) return null;
 
       return jikanQueue.add(async () => {
-        const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}/full`);
-        if (res.status === 429) {
-          throw new Error("Rate Limited");
-        }
-        if (!res.ok) throw new Error("Failed");
-        const json = await res.json();
+        const json = await jikanFetch(`https://api.jikan.moe/v4/anime/${malId}/full`);
         return json.data as JikanAnime;
       });
     },
     enabled: !!malId,
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
     retry: (failureCount, error) => {
-      if (error.message === "Rate Limited" && failureCount < 3) return true;
+      if (failureCount < 3) return true;
       return false;
-    }
+    },
+    retryDelay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000),
   });
 }
 
@@ -349,11 +382,6 @@ export function useJikanSuggestions(genresInclude: number[], genresExclude: numb
   return useQuery({
     queryKey: ["jikan-suggestions", genresInclude, genresExclude],
     queryFn: async () => {
-      // Base recommendation logic:
-      // Jikan API doesn't have a direct "personalized recommendation" endpoint in V4 based on POST data.
-      // We simulate it using the Search endpoint with detailed filters.
-      // We primarily filter by Genre inclusion/exclusion.
-
       let url = `https://api.jikan.moe/v4/anime?order_by=popularity&sfw=true&min_score=7&limit=24`;
 
       if (genresInclude.length > 0) {
@@ -364,15 +392,9 @@ export function useJikanSuggestions(genresInclude: number[], genresExclude: numb
         url += `&genres_exclude=${genresExclude.join(',')}`;
       }
 
-      // Add a randomizer factor (page) if it's broad
-      // To keep it "fresh", we could pick a random page if filters are broad
-      // For now, page 1 is safest for relevancy.
-
       return jikanQueue.add(async () => {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch suggestions");
-        const data = await res.json();
-        return data.data as JikanAnime[];
+        const json = await jikanFetch(url);
+        return (json.data || []) as JikanAnime[];
       });
     },
     enabled: false, // Trigger manual execution

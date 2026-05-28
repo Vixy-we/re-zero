@@ -72,14 +72,24 @@ export default function SmartSuggestions() {
 
         setDetailsLoadingId(id);
         try {
-            // Fetch full details
-            const res = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
-            const data = await res.json();
+            // Fetch full details with retry
+            let data: any = null;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const res = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
+                if (res.status === 429) {
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                    continue;
+                }
+                if (res.ok) {
+                    data = await res.json();
+                    break;
+                }
+                throw new Error(`HTTP ${res.status}`);
+            }
 
-            if (data.data) {
+            if (data?.data) {
                 setSelectedJikanAnime(data.data);
             } else {
-                // Fallback to minimal data if fetch fails
                 setSelectedJikanAnime(anime);
             }
         } catch (e) {
@@ -129,11 +139,23 @@ export default function SmartSuggestions() {
         setRecommendations([]);
 
         try {
-            // STEP 1: Fetch Recommendations for ALL liked anime in parallel
+            const fetchRecsWithRetry = async (malId: number) => {
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}/recommendations`);
+                    if (res.status === 429) {
+                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                        continue;
+                    }
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const json = await res.json();
+                    return json.data || [];
+                }
+                return [];
+            };
+
             const promises = likedAnime.map(anime =>
-                fetch(`https://api.jikan.moe/v4/anime/${anime.malId}/recommendations`)
-                    .then(res => res.json())
-                    .then(data => ({ sourceId: anime.malId, recs: data.data || [] }))
+                fetchRecsWithRetry(anime.malId!)
+                    .then(recs => ({ sourceId: anime.malId, recs }))
                     .catch(err => ({ sourceId: anime.malId, recs: [] }))
             );
 
